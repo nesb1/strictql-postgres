@@ -1,0 +1,49 @@
+[project]
+name = "strictql-postgres"
+version = "0.0.1"
+description = ''
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = []
+authors = [
+    { name = "Bulygin Evgeny", email = "tyztuz@gmail.com" },
+]
+dependencies = [
+    "asyncpg>=0.30,<0.31.0",
+    "cyclopts>=3.1.5,<4.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "mako>=1.3.9,<2.0.0",
+    "pglast>=7.3,<8"
+]
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+lint = ["ruff", "mypy"]
+
+[tool.uv]
+default-groups = ["test", "lint"]
+
+
+[tool.mypy]
+strict = "true"
+warn_return_any = "true"
+warn_unreachable = "true"
+implicit_optional = "true"
+disallow_incomplete_defs = "true"
+disallow_untyped_defs = "true"
+disallow_untyped_decorators = "true"
+disallow_any_unimported = "true"
+disallow_any_expr = "true"
+disallow_any_decorated = "true"
+disallow_any_explicit = "true"
+disallow_any_generics = "true"
+disallow_subclassing_any = "true"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_level = "DEBUG"

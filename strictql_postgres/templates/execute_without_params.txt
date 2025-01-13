@@ -1,0 +1,5 @@
+from asyncpg import Connection
+
+
+async def ${function_name}(connection: Connection) -> str:
+    return await connection.execute("${query}")

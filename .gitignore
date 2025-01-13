@@ -1,0 +1,6 @@
+# it ignores because it usesless for python library
+uv.lock
+.venv*
+.idea
+*.pyc
+.coverage
