@@ -2,10 +2,17 @@ python_versions := "3.11 3.12 3.13"
 
 test:
     for python_version in {{ python_versions }}; do \
-      uv run -p $python_version --with="pydantic>=2" --isolated  python -m pytest --cov strictql_postgres tests; \
-      uv run -p $python_version --with="pydantic<2" --isolated  python -m pytest --cov strictql_postgres tests; \
+      uv run -p $python_version --with "pydantic<2.0.0" --isolated  python -m pytest -vv --cov strictql_postgres tests; \
     done
+
+lint:
+    for python_version in {{ python_versions }}; do \
+      uv run -p $python_version --isolated  python -m ruff check strictql_postgres tests && uv run -p $python_version --isolated  python -m mypy strictql_postgres tests; \
+    done
+
+fix:
+    uv run --isolated  python -m ruff check --fix strictql_postgres tests; \
 
 install:
     uv venv
-    uv export --format requirements-txt --only-group test | uv pip install -r - -p 3.13 # export because https://github.com/astral-sh/uv/issues/8590
+    uv export --format requirements-txt --group test | uv pip install -r - -p 3.13 # uv export because https://github.com/astral-sh/uv/issues/8590

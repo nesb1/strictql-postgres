@@ -7,15 +7,39 @@ requires-python = ">=3.11"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "Bulygin Evgeny", email = "tyztuz@gmail.com" },
+    { name = "Bulygin Evgeny", email = "tyztuz@gmail.com" },
 ]
 dependencies = [
-  "asyncpg",
-  "pglast"
+    "asyncpg",
+    "pglast",
+    "cyclopts>=3.1.5,<4.0.0",
+    "pytest-mypy-plugins",
+    "pydantic<2.0.0"
 ]
 
 [dependency-groups]
-test = ["pytest", "pytest-cov"]
+test = ["pytest", "pytest-cov", "pytest-asyncio"]
+lint = ["ruff", "mypy"]
 
 [tool.uv]
-default-groups = ["test"]
+default-groups = ["test", "lint"]
+
+
+[tool.mypy]
+strict = "true"
+warn_return_any = "true"
+warn_unreachable = "true"
+implicit_optional = "true"
+disallow_incomplete_defs = "true"
+disallow_untyped_defs = "true"
+disallow_untyped_decorators = "true"
+disallow_any_unimported = "true"
+disallow_any_expr = "true"
+disallow_any_decorated = "true"
+disallow_any_explicit = "true"
+disallow_any_generics = "true"
+disallow_subclassing_any = "true"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+log_level = "DEBUG"
