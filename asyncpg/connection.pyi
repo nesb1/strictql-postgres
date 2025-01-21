@@ -11,21 +11,21 @@ class PreparedStatement:
 
 class Connection:
     async def execute(
-        self, query: str, *args: object, timeout: float = None
+        self, query: str, *args: object, timeout: float | None = None
     ) -> str: ...
     async def fetchrow(
         self,
         query: str,
         *args: object,
-        timeout: int = None,
-        record_class: type[Record] = None,
+        timeout: int | None = None,
+        record_class: type[Record] | None = None,
     ) -> Record | None: ...
     async def fetch(
         self,
         query: str,
         *args: object,
-        timeout: int = None,
-        record_class: type[Record] = None,
+        timeout: int | None = None,
+        record_class: type[Record] | None = None,
     ) -> list[Record]: ...
     async def prepare(
         self,
@@ -35,8 +35,7 @@ class Connection:
         timeout: int | None = None,
         record_class: type[Record] | None = None,
     ) -> PreparedStatement: ...
-    
-    async def close(self) -> None:...
+    async def close(self) -> None: ...
 
 async def connect(
     dsn: str | None = None,
@@ -60,4 +59,3 @@ async def connect(
     server_settings: dict[object, object] | None = None,
     target_session_attrs: str | None = None,
 ) -> Connection: ...
-

@@ -1,6 +1,11 @@
 import dataclasses
 from typing import Literal
 
+from strictql_postgres.code_quality import (
+    CodeQualityImprover,
+    CodeQualityImproverError,
+)
+
 ColumnName = str
 ColumnType = type[object]
 
@@ -20,10 +25,15 @@ class StrictQLGeneratedCode:
     function_definition: str
 
 
-def generate_code_for_query(
+class GenerateCodeError(Exception):
+    pass
+
+
+async def generate_code_for_query(
     query_with_db_info: QueryWithDBInfo,
     execution_variant: Literal["fetch_all"],
     function_name: str,
+    code_quality_improver: CodeQualityImprover,
 ) -> str:
     imports = """from pydantic import BaseModel
 from asyncpg import Connection
@@ -47,4 +57,11 @@ from strictql_postgres.asyncpg_result_converter import (
     function_definition = f"""async def {function_name}(connection: Connection) -> Sequence[{model_name}]:
     records = await connection.fetch("{query_with_db_info.query}")
     return convert_records_to_pydantic_models(records=records, pydantic_type={model_name})"""
-    return f"{imports}\n\n{model_definition}\n\n{function_definition}\n"
+    generated_code = f"{imports}\n\n{model_definition}\n\n{function_definition}\n"
+
+    try:
+        return await code_quality_improver.try_to_improve_code(code=generated_code)
+    except CodeQualityImproverError as code_quality_improver_error:
+        raise GenerateCodeError(
+            "Code quality improver failed"
+        ) from code_quality_improver_error

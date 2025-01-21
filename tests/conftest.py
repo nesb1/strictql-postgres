@@ -1,7 +1,10 @@
+import pathlib
 from typing import AsyncIterator
 
 import asyncpg
 import pytest
+
+from strictql_postgres.code_quality import MypyRunner, CodeQualityImprover
 
 POSTGRES_HOST = "127.0.0.1"
 POSTGRES_PORT = 5432
@@ -80,3 +83,17 @@ async def asyncpg_connection_pool_to_test_db() -> AsyncIterator[asyncpg.Pool]:
             f"drop database {POSTGRES_TEST_DB}",
         )
         await connect_to_postgres_database.close()
+
+
+# stubs for packages without typing support located in a project root
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+
+
+@pytest.fixture()
+def mypy_runner() -> MypyRunner:
+    return MypyRunner(mypy_path=PROJECT_ROOT)
+
+
+@pytest.fixture()
+def code_quality_improver(mypy_runner: MypyRunner) -> CodeQualityImprover:
+    return CodeQualityImprover(mypy_runner=mypy_runner)

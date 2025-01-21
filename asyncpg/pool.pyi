@@ -12,21 +12,21 @@ class Pool:
     async def close(self) -> None: ...
     def acquire(self) -> PoolAcquireContext: ...
     async def execute(
-        self, query: str, *args: object, timeout: float = None
+        self, query: str, *args: object, timeout: float | None = None
     ) -> str: ...
     async def fetchrow(
         self,
         query: str,
         *args: object,
-        timeout: int = None,
-        record_class: type[Record] = None,
+        timeout: int | None = None,
+        record_class: type[Record] | None = None,
     ) -> Record | None: ...
     async def fetch(
         self,
         query: str,
         *args: object,
-        timeout: int = None,
-        record_class: type[Record] = None,
+        timeout: int | None = None,
+        record_class: type[Record] | None = None,
     ) -> list[Record]: ...
     async def prepare(
         self,

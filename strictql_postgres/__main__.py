@@ -12,7 +12,7 @@ async def generate(
     dry_run: Annotated[
         bool,
         Parameter(negative="", help="Вывести результат в stdout, не создавать файлы"),
-    ] = False
+    ] = False,
 ) -> None:
     """
     Сгенерировать код для выполнения sql-запросов в Postgres.

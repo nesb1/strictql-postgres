@@ -18,7 +18,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-test = ["pytest", "pytest-cov", "pytest-asyncio"]
+test = [
+    "pytest",
+ "pytest-cov",
+ "pytest-asyncio",
+]
 lint = ["ruff", "mypy"]
 
 [tool.uv]

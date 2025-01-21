@@ -8,7 +8,6 @@ from strictql_postgres.asyncpg_result_converter import (
 async def test_asyncpg_converter(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
 ) -> None:
-
     records = await asyncpg_connection_pool_to_test_db.fetch(
         "select 1 as a, 'kek' as b"
     )
