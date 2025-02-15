@@ -1,5 +1,8 @@
 python_versions := "3.11 3.12 3.13"
 
+default:
+    just --list
+
 test:
     for python_version in {{ python_versions }}; do \
       uv run -p $python_version --with "pydantic<2.0.0" --isolated  python -m pytest -vv --cov strictql_postgres tests; \

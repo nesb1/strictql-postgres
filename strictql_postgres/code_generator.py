@@ -5,6 +5,9 @@ from strictql_postgres.code_quality import (
     CodeQualityImprover,
     CodeQualityImproverError,
 )
+from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
+
+from strictql_postgres.templates import TEMPLATES_DIR
 
 ColumnName = str
 ColumnType = type[object]
@@ -35,32 +38,21 @@ async def generate_code_for_query(
     function_name: str,
     code_quality_improver: CodeQualityImprover,
 ) -> str:
-    imports = """from pydantic import BaseModel
-from asyncpg import Connection
-from collections.abc import Sequence
-
-from strictql_postgres.asyncpg_result_converter import (
-    convert_records_to_pydantic_models,
-)
-"""
+    fields = {
+        field_name: field_type.__name__
+        for field_name, field_type in query_with_db_info.query_result_row_model.items()
+    }
     model_name = "Model"
-    fields_definitions = []
-    for column_name, column_type in query_with_db_info.query_result_row_model.items():
-        type_name: object = getattr(column_type, "__name__", None)
-        if type_name is None or not isinstance(type_name, str):
-            raise NotImplementedError()
-        fields_definitions.append(f"    {column_name}: {type_name}")
-    field_definitions_as_str = "\n".join(fields_definitions)
-    model_definition = f"""class {model_name}(BaseModel):
-{field_definitions_as_str}
-"""
-    function_definition = f"""async def {function_name}(connection: Connection) -> Sequence[{model_name}]:
-    records = await connection.fetch("{query_with_db_info.query}")
-    return convert_records_to_pydantic_models(records=records, pydantic_type={model_name})"""
-    generated_code = f"{imports}\n\n{model_definition}\n\n{function_definition}\n"
+    mako_template_path = (TEMPLATES_DIR / "mako_template.txt").read_text()
+    rendered_code: str = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
+        model_name=model_name,
+        fields=fields.items(),
+        function_name=function_name,
+        query=query_with_db_info.query,
+    )
 
     try:
-        return await code_quality_improver.try_to_improve_code(code=generated_code)
+        return await code_quality_improver.try_to_improve_code(code=rendered_code)
     except CodeQualityImproverError as code_quality_improver_error:
         raise GenerateCodeError(
             "Code quality improver failed"

@@ -2,6 +2,8 @@ import asyncio
 import pathlib
 import sys
 
+from strictql_postgres.format_exception import format_exception
+
 
 class RuffCodeQualityError(Exception):
     pass
@@ -125,6 +127,8 @@ class CodeQualityImprover:
             code = await run_ruff_lint_with_fix(code=code)
             await self._mypy_runner.run_mypy(code=code)
         except (RuffCodeQualityError, MypyCodeQualityError) as error:
-            raise CodeQualityImproverError("Code quality improvement failed") from error
+            raise CodeQualityImproverError(
+                f"Code quality improvement failed: {format_exception(exception=error)}"
+            ) from error
 
         return code

@@ -47,5 +47,4 @@ async def test_code_generator_pydantic_v1(
         function_name="fetch_all_users",
         code_quality_improver=code_quality_improver,
     )
-
     assert actual_generated_code == expected_generated_code

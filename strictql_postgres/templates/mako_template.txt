@@ -1,0 +1,18 @@
+from pydantic import BaseModel
+from asyncpg import Connection
+from collections.abc import Sequence
+
+from strictql_postgres.asyncpg_result_converter import (
+    convert_records_to_pydantic_models,
+)
+
+
+class ${model_name}(BaseModel):
+% for field_name, field_type in fields:
+    ${field_name}: ${field_type}
+% endfor
+
+
+async def ${function_name}(connection: Connection) -> Sequence[${model_name}]:
+    records = await connection.fetch("${query}")
+    return convert_records_to_pydantic_models(records=records, pydantic_type=${model_name})
