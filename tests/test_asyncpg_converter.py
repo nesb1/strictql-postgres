@@ -21,9 +21,9 @@ async def test_asyncpg_converter(
         a: int
         b: str
 
-    assert convert_records_to_pydantic_models(records=records, pydantic_type=Model) == [
-        Model(a=1, b="kek")
-    ]
+    assert convert_records_to_pydantic_models(
+        records=records, pydantic_model_type=Model
+    ) == [Model(a=1, b="kek")]
 
 
 SUPPORTED_PYTHON_TYPES = {
@@ -110,5 +110,5 @@ async def test_all_supported_types_converts(
             a: test_case.python_type
 
         assert convert_records_to_pydantic_models(
-            records=records, pydantic_type=Model
+            records=records, pydantic_model_type=Model
         ) == [Model(a=test_case.python_value)]

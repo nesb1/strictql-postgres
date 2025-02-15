@@ -7,6 +7,7 @@ from strictql_postgres.code_quality import (
 )
 from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
 
+from strictql_postgres.format_exception import format_exception
 from strictql_postgres.templates import TEMPLATES_DIR
 
 ColumnName = str
@@ -55,5 +56,5 @@ async def generate_code_for_query(
         return await code_quality_improver.try_to_improve_code(code=rendered_code)
     except CodeQualityImproverError as code_quality_improver_error:
         raise GenerateCodeError(
-            "Code quality improver failed"
+            f"Code quality improver failed: {format_exception(exception=code_quality_improver_error)}"
         ) from code_quality_improver_error

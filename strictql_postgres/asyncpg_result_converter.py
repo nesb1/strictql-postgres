@@ -9,10 +9,10 @@ T = TypeVar("T", bound=BaseModel)
 
 
 def convert_records_to_pydantic_models(
-    records: Sequence[Record], pydantic_type: type[T]
+    records: Sequence[Record], pydantic_model_type: type[T]
 ) -> Sequence[T]:
     pydantic_models = []
     for record in records:
-        pydantic_models.append(pydantic_type.parse_obj(record))
+        pydantic_models.append(pydantic_model_type.parse_obj(record))
 
     return pydantic_models

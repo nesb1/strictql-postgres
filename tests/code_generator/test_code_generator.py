@@ -7,7 +7,7 @@ from strictql_postgres.code_generator import (
 from asyncpg import Pool
 from strictql_postgres.code_quality import CodeQualityImprover
 
-from tests.code_generator.expected_generated_code.simple_pydantic_v1 import Model
+from tests.code_generator.expected_generated_code.pydantic_fetch import Model
 
 EXPECTED_GENERATED_CODE_DIR = pathlib.Path(__file__).parent / "expected_generated_code"
 
@@ -21,7 +21,7 @@ async def test_code_generator_pydantic_v1(
 
     query = "SELECT * FROM users;"
 
-    from tests.code_generator.expected_generated_code.simple_pydantic_v1 import (
+    from tests.code_generator.expected_generated_code.pydantic_fetch import (
         fetch_all_users,
     )
 
@@ -34,7 +34,7 @@ async def test_code_generator_pydantic_v1(
         users = await fetch_all_users(conn)
         assert users == [Model(id=1, name="kek")]
 
-    with (EXPECTED_GENERATED_CODE_DIR / "simple_pydantic_v1.py").open() as file:
+    with (EXPECTED_GENERATED_CODE_DIR / "pydantic_fetch.py").open() as file:
         expected_generated_code = file.read()
 
     db_row_model = {"id": int, "name": str}
