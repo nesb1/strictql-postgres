@@ -6,8 +6,11 @@ from strictql_postgres.code_generator import (
 )
 from asyncpg import Pool
 from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
-from tests.code_generator.expected_generated_code.pydantic_fetch import Model
+from tests.code_generator.expected_generated_code.pydantic_fetch import (
+    FetchAllUsersModel,
+)
 
 EXPECTED_GENERATED_CODE_DIR = pathlib.Path(__file__).parent / "expected_generated_code"
 
@@ -32,7 +35,7 @@ async def test_code_generator_pydantic_v1(
     )
     async with asyncpg_connection_pool_to_test_db.acquire() as conn:
         users = await fetch_all_users(conn)
-        assert users == [Model(id=1, name="kek")]
+        assert users == [FetchAllUsersModel(id=1, name="kek")]
 
     with (EXPECTED_GENERATED_CODE_DIR / "pydantic_fetch.py").open() as file:
         expected_generated_code = file.read()
@@ -44,7 +47,7 @@ async def test_code_generator_pydantic_v1(
             query=query, query_result_row_model=db_row_model
         ),
         execution_variant="fetch_all",
-        function_name="fetch_all_users",
+        function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
     )
     assert actual_generated_code == expected_generated_code

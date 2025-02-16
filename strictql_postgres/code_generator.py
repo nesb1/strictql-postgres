@@ -8,7 +8,9 @@ from strictql_postgres.code_quality import (
 from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
 
 from strictql_postgres.format_exception import format_exception
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
+from strictql_postgres.model_name_generator import generate_model_name_by_function_name
 
 ColumnName = str
 ColumnType = type[object]
@@ -36,19 +38,21 @@ class GenerateCodeError(Exception):
 async def generate_code_for_query(
     query_with_db_info: QueryWithDBInfo,
     execution_variant: Literal["fetch_all"],
-    function_name: str,
+    function_name: StringInSnakeLowerCase,
     code_quality_improver: CodeQualityImprover,
 ) -> str:
     fields = {
         field_name: field_type.__name__
         for field_name, field_type in query_with_db_info.query_result_row_model.items()
     }
-    model_name = "Model"
+
+    model_name = generate_model_name_by_function_name(function_name=function_name)
+
     mako_template_path = (TEMPLATES_DIR / "mako_template.txt").read_text()
     rendered_code: str = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
         model_name=model_name,
         fields=fields.items(),
-        function_name=function_name,
+        function_name=function_name.value,
         query=query_with_db_info.query,
     )
 

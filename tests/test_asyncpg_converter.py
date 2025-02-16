@@ -42,7 +42,7 @@ SUPPORTED_POSTGRES_TYPES = {"varchar", "integer", "text"}
 
 @dataclasses.dataclass
 class TypeConverterTestCase:
-    python_type: object
+    python_type: type[object]
     postgres_type: str
     postgres_value_as_str: str
     python_value: object
@@ -83,7 +83,7 @@ SUPPORTED_TYPES_TEST_CASES = [
 
 
 async def test_all_supported_types_exist_in_test_cases() -> None:
-    unique_python_types = set()
+    unique_python_types: set[type[object]] = set()
     unique_postgres_types = set()
     for test_case in SUPPORTED_TYPES_TEST_CASES:
         unique_python_types.add(test_case.python_type)
@@ -97,6 +97,9 @@ async def test_all_supported_types_exist_in_test_cases() -> None:
 async def test_all_supported_types_converts(
     asyncpg_connection_pool_to_test_db: Pool, test_case: TypeConverterTestCase
 ) -> None:
+    class Model(BaseModel):
+        a: test_case.python_type  # type:ignore[name-defined] # mypy wtf
+
     async with asyncpg_connection_pool_to_test_db.acquire() as pool:
         await pool.execute(f"create table test (a {test_case.postgres_type})")
 
@@ -105,9 +108,6 @@ async def test_all_supported_types_converts(
         )
 
         records = await pool.fetch(query="select * from test")
-
-        class Model(BaseModel):
-            a: test_case.python_type
 
         assert convert_records_to_pydantic_models(
             records=records, pydantic_model_type=Model

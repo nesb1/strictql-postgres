@@ -5,13 +5,13 @@ from collections.abc import Sequence
 from strictql_postgres.api import convert_records_to_pydantic_models
 
 
-class Model(BaseModel):
+class FetchAllUsersModel(BaseModel):
     id: int
     name: str
 
 
-async def fetch_all_users(connection: Connection) -> Sequence[Model]:
+async def fetch_all_users(connection: Connection) -> Sequence[FetchAllUsersModel]:
     records = await connection.fetch("SELECT * FROM users;")
     return convert_records_to_pydantic_models(
-        records=records, pydantic_model_type=Model
+        records=records, pydantic_model_type=FetchAllUsersModel
     )
