@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from cyclopts import App, Parameter
 from typing import Annotated, Literal
 
-from strictql_postgres.code_generator import generate_code_for_query, QueryWithDBInfo
+from strictql_postgres.code_generator import (
+    generate_code_for_query,
+    QueryWithDBInfo,
+    QueryParam,
+)
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
@@ -27,7 +31,9 @@ async def generate(
     print(
         await generate_code_for_query(
             query_with_db_info=QueryWithDBInfo(
-                query="select 1 as v", query_result_row_model={"v": int}
+                query="select * from users where id = $1",
+                result_row_model={"v": int},
+                params=[QueryParam(name_in_function="user_id", type_=int)],
             ),
             execution_variant="fetch_all",
             function_name=StringInSnakeLowerCase("select_1"),

@@ -19,16 +19,16 @@ DataBaseRowModel = dict[ColumnName, ColumnType]
 
 
 @dataclasses.dataclass
-class QueryWithDBInfo:
-    query: str
-    query_result_row_model: DataBaseRowModel
+class QueryParam:
+    name_in_function: str
+    type_: type[object]
 
 
 @dataclasses.dataclass
-class StrictQLGeneratedCode:
-    imports: str
-    model_definition: str
-    function_definition: str
+class QueryWithDBInfo:
+    query: str
+    result_row_model: DataBaseRowModel
+    params: list[QueryParam]
 
 
 class GenerateCodeError(Exception):
@@ -43,18 +43,29 @@ async def generate_code_for_query(
 ) -> str:
     fields = {
         field_name: field_type.__name__
-        for field_name, field_type in query_with_db_info.query_result_row_model.items()
+        for field_name, field_type in query_with_db_info.result_row_model.items()
     }
 
     model_name = generate_model_name_by_function_name(function_name=function_name)
-
-    mako_template_path = (TEMPLATES_DIR / "mako_template.txt").read_text()
-    rendered_code: str = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
-        model_name=model_name,
-        fields=fields.items(),
-        function_name=function_name.value,
-        query=query_with_db_info.query,
-    )
+    rendered_code: str
+    if len(query_with_db_info.params) == 0:
+        mako_template_path = (TEMPLATES_DIR / "pydantic_without_params.txt").read_text()
+        rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
+            model_name=model_name,
+            fields=fields.items(),
+            function_name=function_name.value,
+            query=query_with_db_info.query,
+            params=[],
+        )
+    else:
+        mako_template_path = (TEMPLATES_DIR / "pydantic_with_params.txt").read_text()
+        rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
+            model_name=model_name,
+            fields=fields.items(),
+            function_name=function_name.value,
+            query=query_with_db_info.query,
+            params=query_with_db_info.params,
+        )
 
     try:
         return await code_quality_improver.try_to_improve_code(code=rendered_code)
