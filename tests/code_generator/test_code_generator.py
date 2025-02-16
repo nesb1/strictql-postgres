@@ -2,9 +2,8 @@ import pathlib
 
 from strictql_postgres.code_generator import (
     generate_code_for_query,
-    QueryWithDBInfo,
-    QueryParam,
 )
+from strictql_postgres.common_types import QueryParam, QueryWithDBInfo, SelectQuery
 from asyncpg import Pool
 from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -47,7 +46,7 @@ async def test_code_generator_pydantic_without_bind_params(
 
     actual_generated_code = await generate_code_for_query(
         query_with_db_info=QueryWithDBInfo(
-            query=query, result_row_model=db_row_model, params=[]
+            query=SelectQuery(query=query), result_row_model=db_row_model, params=[]
         ),
         execution_variant="fetch_all",
         function_name=StringInSnakeLowerCase("fetch_all_users"),
@@ -85,7 +84,7 @@ async def test_code_generator_pydantic_with_bind_params(
 
     actual_generated_code = await generate_code_for_query(
         query_with_db_info=QueryWithDBInfo(
-            query=query,
+            query=SelectQuery(query=query),
             result_row_model=db_row_model,
             params=[
                 QueryParam(name_in_function="id", type_=int),

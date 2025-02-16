@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Literal
 
 from strictql_postgres.code_quality import (
@@ -11,24 +10,7 @@ from strictql_postgres.format_exception import format_exception
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
 from strictql_postgres.model_name_generator import generate_model_name_by_function_name
-
-ColumnName = str
-ColumnType = type[object]
-
-DataBaseRowModel = dict[ColumnName, ColumnType]
-
-
-@dataclasses.dataclass
-class QueryParam:
-    name_in_function: str
-    type_: type[object]
-
-
-@dataclasses.dataclass
-class QueryWithDBInfo:
-    query: str
-    result_row_model: DataBaseRowModel
-    params: list[QueryParam]
+from strictql_postgres.common_types import QueryWithDBInfo
 
 
 class GenerateCodeError(Exception):
@@ -54,7 +36,7 @@ async def generate_code_for_query(
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=query_with_db_info.query,
+            query=query_with_db_info.query.query,
             params=[],
         )
     else:
@@ -63,7 +45,7 @@ async def generate_code_for_query(
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=query_with_db_info.query,
+            query=query_with_db_info.query.query,
             params=query_with_db_info.params,
         )
 

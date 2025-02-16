@@ -1,13 +1,9 @@
 from asyncio import AbstractEventLoop
 from ssl import SSLContext
 
-from asyncpg.types import AttributeRowDescription, ParameterDescriptionType
+from asyncpg.prepared_stmt import PreparedStatement
 
 from asyncpg import Record
-
-class PreparedStatement:
-    def get_parameters(self) -> tuple[ParameterDescriptionType, ...]: ...
-    def get_attributes(self) -> tuple[AttributeRowDescription, ...]: ...
 
 class Connection:
     async def execute(

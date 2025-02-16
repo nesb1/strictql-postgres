@@ -1,4 +1,5 @@
-from asyncpg.connection import Connection, PreparedStatement
+from asyncpg.connection import Connection
+from asyncpg.prepared_stmt import PreparedStatement
 
 from asyncpg import Record
 
@@ -36,8 +37,12 @@ class Pool:
         timeout: int | None = None,
         record_class: type[Record] | None = None,
     ) -> PreparedStatement: ...
+    async def __aenter__(self) -> "Pool": ...
+    async def __aexit__(
+        self, exc_type: type[BaseException], exc_val: BaseException, exc_tb: object
+    ) -> None: ...
 
-async def create_pool(
+def create_pool(
     dsn: str | None = None,
     min_size: int | None = None,
     max_size: int | None = None,
