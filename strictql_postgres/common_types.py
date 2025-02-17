@@ -1,7 +1,13 @@
 import dataclasses
 
+
+@dataclasses.dataclass(frozen=True)
+class ColumnType:
+    type_: type[object]
+    is_optional: bool
+
+
 ColumnName = str
-ColumnType = type[object]
 DataBaseRowModel = dict[ColumnName, ColumnType]
 
 

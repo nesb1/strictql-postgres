@@ -14,12 +14,19 @@ from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types_from_prepared_statement,
 )
+from strictql_postgres.pg_response_schema_getter import (
+    get_pg_response_schema_from_prepared_statement,
+)
+
+TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 app = App()
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
 async def generate(
+    query: str,
+    param_names: list[str] | None = None,
     dry_run: Annotated[
         bool,
         Parameter(negative="", help="Вывести результат в stdout, не создавать файлы"),
@@ -30,10 +37,8 @@ async def generate(
 
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
-    query = "select * from users where id = $1"
+    print(param_names)
     select_query = SelectQuery(query=query)
-    params_mapping = ["user_id"]
-    row_model = {"id": int, "name": str}
     async with asyncpg.create_pool(
         host="127.0.0.1",
         user="postgres",
@@ -43,16 +48,21 @@ async def generate(
     ) as connection_pool:
         async with connection_pool.acquire() as connection:
             prepared_statement = await connection.prepare(query=select_query.query)
-            print("prepared statement")
+
+            schema = get_pg_response_schema_from_prepared_statement(
+                prepared_stmt=prepared_statement,
+                python_type_by_postgres_type=TYPES_MAPPING,
+            )
+
             param_types = get_bind_params_python_types_from_prepared_statement(
                 prepared_statement=prepared_statement,
-                python_type_by_postgres_type={"int4": int, "varchar": str},
+                python_type_by_postgres_type=TYPES_MAPPING,
             )
             params = []
             for index, parameter_type in enumerate(param_types):
                 params.append(
                     QueryParam(
-                        name_in_function=params_mapping[index], type_=parameter_type
+                        name_in_function=param_names[index], type_=parameter_type
                     )
                 )
 
@@ -60,7 +70,7 @@ async def generate(
         await generate_code_for_query(
             query_with_db_info=QueryWithDBInfo(
                 query=select_query,
-                result_row_model=row_model,
+                result_row_model=schema,
                 params=params,
             ),
             execution_variant="fetch_all",

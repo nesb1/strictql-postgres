@@ -6,8 +6,8 @@ from strictql_postgres.api import convert_records_to_pydantic_models
 
 
 class FetchAllUsersModel(BaseModel):
-    id: int
-    name: str
+    id: int | None
+    name: str | None
 
 
 async def fetch_all_users(connection: Connection) -> Sequence[FetchAllUsersModel]:

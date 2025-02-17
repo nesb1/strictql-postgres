@@ -3,7 +3,12 @@ import pathlib
 from strictql_postgres.code_generator import (
     generate_code_for_query,
 )
-from strictql_postgres.common_types import QueryParam, QueryWithDBInfo, SelectQuery
+from strictql_postgres.common_types import (
+    QueryParam,
+    QueryWithDBInfo,
+    SelectQuery,
+    ColumnType,
+)
 from asyncpg import Pool
 from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -42,7 +47,10 @@ async def test_code_generator_pydantic_without_bind_params(
     ).open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {"id": int, "name": str}
+    db_row_model = {
+        "id": ColumnType(type_=int, is_optional=True),
+        "name": ColumnType(type_=str, is_optional=True),
+    }
 
     actual_generated_code = await generate_code_for_query(
         query_with_db_info=QueryWithDBInfo(
@@ -80,7 +88,10 @@ async def test_code_generator_pydantic_with_bind_params(
     ).open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {"id": int, "name": str}
+    db_row_model = {
+        "id": ColumnType(int, is_optional=True),
+        "name": ColumnType(str, is_optional=True),
+    }
 
     actual_generated_code = await generate_code_for_query(
         query_with_db_info=QueryWithDBInfo(

@@ -4,7 +4,7 @@ import pytest
 from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types_from_prepared_statement,
     QueryParamType,
-    BindParamTypeNotSupportedError,
+    PgBindParamTypeNotSupportedError,
 )
 
 
@@ -43,7 +43,7 @@ async def test_get_bind_params_types_for_query_with_params_when_not_supported_ty
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         prepared_statement = await connection.prepare("select $1")
-        with pytest.raises(BindParamTypeNotSupportedError) as error:
+        with pytest.raises(PgBindParamTypeNotSupportedError) as error:
             get_bind_params_python_types_from_prepared_statement(
                 prepared_statement=prepared_statement, python_type_by_postgres_type={}
             )

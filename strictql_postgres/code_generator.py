@@ -24,7 +24,11 @@ async def generate_code_for_query(
     code_quality_improver: CodeQualityImprover,
 ) -> str:
     fields = {
-        field_name: field_type.__name__
+        field_name: (
+            f"{field_type.type_.__name__} | None"
+            if field_type.is_optional
+            else f"{field_type.type_.__name__}"
+        )
         for field_name, field_type in query_with_db_info.result_row_model.items()
     }
 

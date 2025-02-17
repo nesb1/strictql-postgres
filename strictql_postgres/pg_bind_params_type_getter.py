@@ -7,7 +7,7 @@ QueryParamType = type[object]
 
 
 @dataclasses.dataclass
-class BindParamTypeNotSupportedError(Exception):
+class PgBindParamTypeNotSupportedError(Exception):
     postgres_type: str
 
 
@@ -22,6 +22,6 @@ def get_bind_params_python_types_from_prepared_statement(
         try:
             python_type = python_type_by_postgres_type[param.name]
         except KeyError:
-            raise BindParamTypeNotSupportedError(postgres_type=param.name)
+            raise PgBindParamTypeNotSupportedError(postgres_type=param.name)
         parameters_python_types.append(python_type)
     return parameters_python_types
