@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Mapping
 
 
 @dataclasses.dataclass(frozen=True)
@@ -12,25 +13,34 @@ DataBaseRowModel = dict[ColumnName, ColumnType]
 
 
 @dataclasses.dataclass
-class QueryParam:
+class BindParam:
     name_in_function: str
     type_: type[object]
 
 
-QueryParams = list[QueryParam]
+BindParams = list[BindParam]
 
 
 @dataclasses.dataclass()
-class SelectQuery:
+class SupportedQuery:
     query: str
 
     def __post_init__(self) -> None:
-        if not self.query.lower().strip().startswith("select"):
-            raise ValueError()
+        if not self.query.lower().strip().startswith(("select", "delete")):
+            raise ValueError(f"Query: {self.query} not supported")
+
+
+@dataclasses.dataclass(frozen=True)
+class NotEmptyRowSchema:
+    schema: Mapping[ColumnName, ColumnType]
+
+    def __post_init__(self) -> None:
+        if len(self.schema) == 0:
+            raise ValueError("Empty schema")
 
 
 @dataclasses.dataclass
 class QueryWithDBInfo:
-    query: SelectQuery
+    query: SupportedQuery
     result_row_model: DataBaseRowModel
-    params: QueryParams
+    params: BindParams

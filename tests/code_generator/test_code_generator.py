@@ -1,20 +1,23 @@
 import pathlib
 
 from strictql_postgres.code_generator import (
-    generate_code_for_query,
+    generate_code_for_query_with_fetch_all_method,
 )
 from strictql_postgres.common_types import (
-    QueryParam,
-    QueryWithDBInfo,
-    SelectQuery,
+    BindParam,
+    SupportedQuery,
     ColumnType,
+    NotEmptyRowSchema,
 )
 from asyncpg import Pool
 from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
+from tests.code_generator.expected_generated_code.pydantic_fetch_with_bind_params import (
+    FetchAllUsersModel as FetchAllUsersModelWithBindParams,
+)
 
 from tests.code_generator.expected_generated_code.pydantic_fetch_without_bind_params import (
-    FetchAllUsersModel,
+    FetchAllUsersModel as FetchAllUsersModelWithoutBindParams,
 )
 
 EXPECTED_GENERATED_CODE_DIR = pathlib.Path(__file__).parent / "expected_generated_code"
@@ -40,7 +43,7 @@ async def test_code_generator_pydantic_without_bind_params(
     )
     async with asyncpg_connection_pool_to_test_db.acquire() as conn:
         users = await fetch_all_users(conn)
-        assert list(users) == [FetchAllUsersModel(id=1, name="kek")]
+        assert list(users) == [FetchAllUsersModelWithoutBindParams(id=1, name="kek")]
 
     with (
         EXPECTED_GENERATED_CODE_DIR / "pydantic_fetch_without_bind_params.py"
@@ -52,11 +55,10 @@ async def test_code_generator_pydantic_without_bind_params(
         "name": ColumnType(type_=str, is_optional=True),
     }
 
-    actual_generated_code = await generate_code_for_query(
-        query_with_db_info=QueryWithDBInfo(
-            query=SelectQuery(query=query), result_row_model=db_row_model, params=[]
-        ),
-        execution_variant="fetch_all",
+    actual_generated_code = await generate_code_for_query_with_fetch_all_method(
+        supported_query=SupportedQuery(query=query),
+        result_schema=NotEmptyRowSchema(db_row_model),
+        bind_params=[],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
     )
@@ -81,7 +83,7 @@ async def test_code_generator_pydantic_with_bind_params(
     )
     async with asyncpg_connection_pool_to_test_db.acquire() as conn:
         users = await fetch_all_users(conn, id=1, name="kek")
-        assert list(users) == [FetchAllUsersModel(id=1, name="kek")]
+        assert list(users) == [FetchAllUsersModelWithBindParams(id=1, name="kek")]
 
     with (
         EXPECTED_GENERATED_CODE_DIR / "pydantic_fetch_with_bind_params.py"
@@ -93,16 +95,13 @@ async def test_code_generator_pydantic_with_bind_params(
         "name": ColumnType(str, is_optional=True),
     }
 
-    actual_generated_code = await generate_code_for_query(
-        query_with_db_info=QueryWithDBInfo(
-            query=SelectQuery(query=query),
-            result_row_model=db_row_model,
-            params=[
-                QueryParam(name_in_function="id", type_=int),
-                QueryParam(name_in_function="name", type_=str),
-            ],
-        ),
-        execution_variant="fetch_all",
+    actual_generated_code = await generate_code_for_query_with_fetch_all_method(
+        supported_query=SupportedQuery(query=query),
+        result_schema=NotEmptyRowSchema(db_row_model),
+        bind_params=[
+            BindParam(name_in_function="id", type_=int),
+            BindParam(name_in_function="name", type_=str),
+        ],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
     )

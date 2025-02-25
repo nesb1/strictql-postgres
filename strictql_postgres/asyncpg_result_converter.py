@@ -13,6 +13,7 @@ def convert_records_to_pydantic_models(
 ) -> Sequence[T]:
     pydantic_models = []
     for record in records:
-        pydantic_models.append(pydantic_model_type.parse_obj(record))
+        model_dict: dict[str, object] = dict(record.items())
+        pydantic_models.append(pydantic_model_type.model_validate(model_dict))
 
     return pydantic_models

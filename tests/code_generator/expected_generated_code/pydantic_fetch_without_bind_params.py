@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from strictql_postgres.api import convert_records_to_pydantic_models
 
 
-class FetchAllUsersModel(BaseModel):
+class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any,misc]
     id: int | None
     name: str | None
 

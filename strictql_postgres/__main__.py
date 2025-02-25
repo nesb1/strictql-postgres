@@ -6,9 +6,9 @@ from typing import Annotated, Literal
 
 import asyncpg
 from strictql_postgres.code_generator import (
-    generate_code_for_query,
+    generate_code_for_query_with_fetch_all_method,
 )
-from strictql_postgres.common_types import QueryParam, QueryWithDBInfo, SelectQuery
+from strictql_postgres.common_types import BindParam, SupportedQuery, NotEmptyRowSchema
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.pg_bind_params_type_getter import (
@@ -37,8 +37,7 @@ async def generate(
 
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
-    print(param_names)
-    select_query = SelectQuery(query=query)
+    supported_query = SupportedQuery(query=query)
     async with asyncpg.create_pool(
         host="127.0.0.1",
         user="postgres",
@@ -47,7 +46,7 @@ async def generate(
         database="postgres",
     ) as connection_pool:
         async with connection_pool.acquire() as connection:
-            prepared_statement = await connection.prepare(query=select_query.query)
+            prepared_statement = await connection.prepare(query=supported_query.query)
 
             schema = get_pg_response_schema_from_prepared_statement(
                 prepared_stmt=prepared_statement,
@@ -59,21 +58,19 @@ async def generate(
                 python_type_by_postgres_type=TYPES_MAPPING,
             )
             params = []
-            for index, parameter_type in enumerate(param_types):
-                params.append(
-                    QueryParam(
-                        name_in_function=param_names[index], type_=parameter_type
+            if param_names:
+                for index, parameter_type in enumerate(param_types):
+                    params.append(
+                        BindParam(
+                            name_in_function=param_names[index], type_=parameter_type
+                        )
                     )
-                )
 
     print(
-        await generate_code_for_query(
-            query_with_db_info=QueryWithDBInfo(
-                query=select_query,
-                result_row_model=schema,
-                params=params,
-            ),
-            execution_variant="fetch_all",
+        await generate_code_for_query_with_fetch_all_method(
+            supported_query=supported_query,
+            result_schema=NotEmptyRowSchema(schema=schema),
+            bind_params=params,
             function_name=StringInSnakeLowerCase("select_users"),
             code_quality_improver=CodeQualityImprover(
                 mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)

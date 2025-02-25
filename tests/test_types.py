@@ -1,10 +1,10 @@
 import pytest
 
-from strictql_postgres.common_types import SelectQuery
+from strictql_postgres.common_types import SupportedQuery
 
 
 def test_select_query_works() -> None:
-    SelectQuery(query="select * from users")
+    SupportedQuery(query="select * from users")
 
 
 @pytest.mark.parametrize(
@@ -12,4 +12,4 @@ def test_select_query_works() -> None:
 )
 def test_select_query_raises_error(query: str) -> None:
     with pytest.raises(ValueError):
-        SelectQuery(query=query)
+        SupportedQuery(query=query)

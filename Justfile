@@ -5,7 +5,7 @@ default:
 
 test:
     for python_version in {{ python_versions }}; do \
-      uv run -p $python_version --with "pydantic<2.0.0" --isolated  python -m pytest -vv --cov strictql_postgres tests; \
+      uv run -p $python_version --isolated  python -m pytest -vv --cov strictql_postgres tests; \
     done
 
 lint:

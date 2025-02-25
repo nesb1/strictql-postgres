@@ -1,5 +1,3 @@
-from typing import Literal
-
 from strictql_postgres.code_quality import (
     CodeQualityImprover,
     CodeQualityImproverError,
@@ -10,16 +8,17 @@ from strictql_postgres.format_exception import format_exception
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
 from strictql_postgres.model_name_generator import generate_model_name_by_function_name
-from strictql_postgres.common_types import QueryWithDBInfo
+from strictql_postgres.common_types import SupportedQuery, NotEmptyRowSchema, BindParams
 
 
 class GenerateCodeError(Exception):
     pass
 
 
-async def generate_code_for_query(
-    query_with_db_info: QueryWithDBInfo,
-    execution_variant: Literal["fetch_all"],
+async def generate_code_for_query_with_fetch_all_method(
+    supported_query: SupportedQuery,
+    result_schema: NotEmptyRowSchema,
+    bind_params: BindParams,
     function_name: StringInSnakeLowerCase,
     code_quality_improver: CodeQualityImprover,
 ) -> str:
@@ -29,18 +28,18 @@ async def generate_code_for_query(
             if field_type.is_optional
             else f"{field_type.type_.__name__}"
         )
-        for field_name, field_type in query_with_db_info.result_row_model.items()
+        for field_name, field_type in result_schema.schema.items()
     }
 
     model_name = generate_model_name_by_function_name(function_name=function_name)
     rendered_code: str
-    if len(query_with_db_info.params) == 0:
+    if len(bind_params) == 0:
         mako_template_path = (TEMPLATES_DIR / "pydantic_without_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=query_with_db_info.query.query,
+            query=supported_query.query,
             params=[],
         )
     else:
@@ -49,8 +48,8 @@ async def generate_code_for_query(
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=query_with_db_info.query.query,
-            params=query_with_db_info.params,
+            query=supported_query.query,
+            params=bind_params,
         )
 
     try:

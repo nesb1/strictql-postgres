@@ -17,7 +17,7 @@ async def test_asyncpg_converter(
         "select 1 as a, 'kek' as b"
     )
 
-    class Model(BaseModel):
+    class Model(BaseModel):  # type:ignore[explicit-any,misc]
         a: int
         b: str
 
@@ -97,7 +97,7 @@ async def test_all_supported_types_exist_in_test_cases() -> None:
 async def test_all_supported_types_converts(
     asyncpg_connection_pool_to_test_db: Pool, test_case: TypeConverterTestCase
 ) -> None:
-    class Model(BaseModel):
+    class Model(BaseModel):  # type:ignore[explicit-any,misc]
         a: test_case.python_type  # type:ignore[name-defined] # mypy wtf
 
     async with asyncpg_connection_pool_to_test_db.acquire() as pool:

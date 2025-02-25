@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from strictql_postgres.api import convert_records_to_pydantic_models
 
 
-class ${model_name}(BaseModel):
+class ${model_name}(BaseModel): # type: ignore[explicit-any,misc]
 % for field_name, field_type in fields:
     ${field_name}: ${field_type}
 % endfor
