@@ -16,7 +16,7 @@ from strictql_postgres.pg_response_schema_getter import (
             "select (1::int4) as id, ('kek'::varchar) as name",
             {
                 "id": ColumnType(type_=int, is_optional=True),
-                "name": ColumnType(type_=int, is_optional=True),
+                "name": ColumnType(type_=str, is_optional=True),
             },
         )
     ],
