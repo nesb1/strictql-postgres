@@ -1,6 +1,7 @@
 import pathlib
 from dataclasses import dataclass
 
+import pglast
 from cyclopts import App, Parameter
 from typing import Annotated, Literal
 
@@ -13,7 +14,7 @@ from strictql_postgres.common_types import BindParam, SupportedQuery, NotEmptyRo
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.pg_bind_params_type_getter import (
-    get_bind_params_python_types_from_prepared_statement,
+    get_bind_params_python_types,
 )
 from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
@@ -57,16 +58,21 @@ async def generate(
                 python_type_by_postgres_type=TYPES_MAPPING,
             )
 
-            param_types = get_bind_params_python_types_from_prepared_statement(
+            param_types = await get_bind_params_python_types(
                 prepared_statement=prepared_statement,
                 python_type_by_postgres_type=TYPES_MAPPING,
+                parsed_sql=pglast.parse_sql(supported_query.query),
+                make_bind_params_more_optional=False,
+                connection=connection,
             )
             params = []
             if param_names:
                 for index, parameter_type in enumerate(param_types):
                     params.append(
                         BindParam(
-                            name_in_function=param_names[index], type_=parameter_type
+                            name_in_function=param_names[index],
+                            type_=parameter_type.type_,
+                            is_optional=parameter_type.is_optional,
                         )
                     )
     match fetch_type:

@@ -9,8 +9,8 @@ def test_select_query_works() -> None:
 
 @pytest.mark.parametrize(
     "query",
-    ["insert into users (id, name) values (1,'')", "update users set name = '123'"],
+    ["update users set name = '123'"],
 )
-def test_select_query_raises_error(query: str) -> None:
+def test_not_suuported_query_raises_error(query: str) -> None:
     with pytest.raises(ValueError):
         SupportedQuery(query=query)

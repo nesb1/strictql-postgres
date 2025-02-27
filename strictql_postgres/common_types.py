@@ -16,6 +16,7 @@ DataBaseRowModel = dict[ColumnName, ColumnType]
 class BindParam:
     name_in_function: str
     type_: type[object]
+    is_optional: bool
 
 
 BindParams = list[BindParam]
@@ -26,7 +27,7 @@ class SupportedQuery:
     query: str
 
     def __post_init__(self) -> None:
-        if not self.query.lower().strip().startswith(("select", "delete")):
+        if not self.query.lower().strip().startswith(("select", "delete", "insert")):
             raise ValueError(f"Query: {self.query} not supported")
 
 

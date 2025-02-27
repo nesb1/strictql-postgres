@@ -1,0 +1,64 @@
+import asyncpg
+import pglast
+import pytest
+
+from strictql_postgres.pg_bind_params_type_getter import (
+    get_bind_params_python_types,
+    BindParamType,
+)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_params", "optional_params"),
+    [
+        ("select 1", [], False),
+        ("select 1", [], True),
+        (
+            "select * from (values (1)) as v (a) where a = $1;",
+            [BindParamType(int, is_optional=False)],
+            False,
+        ),
+        (
+            "select * from (values (1)) as v (a) where a = $1;",
+            [BindParamType(int, is_optional=True)],
+            True,
+        ),
+        (
+            "select * from (values (1,'kek')) as v (a,b) where a = $1 and b = $2;",
+            [
+                BindParamType(int, is_optional=False),
+                BindParamType(str, is_optional=False),
+            ],
+            False,
+        ),
+        (
+            "select * from (values (1,'kek')) as v (a,b) where a = $1 and b = $2;",
+            [
+                BindParamType(int, is_optional=True),
+                BindParamType(str, is_optional=True),
+            ],
+            True,
+        ),
+    ],
+)
+async def test_get_bind_params_types_for_query(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    query: str,
+    expected_params: list[BindParamType],
+    optional_params: bool,
+) -> None:
+    python_type_by_postgres_type = {
+        "int4": int,
+        "varchar": str,
+        "text": str,
+    }
+
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        prepared_statement = await connection.prepare(query)
+        assert expected_params == await get_bind_params_python_types(
+            prepared_statement=prepared_statement,
+            python_type_by_postgres_type=python_type_by_postgres_type,
+            parsed_sql=pglast.parse_sql(query),
+            make_bind_params_more_optional=optional_params,
+            connection=connection,
+        )

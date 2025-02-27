@@ -11,6 +11,6 @@ class ${model_name}(BaseModel): # type: ignore[explicit-any,misc]
 % endfor
 
 
-async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_.__name__}" for param in params])}) -> Sequence[${model_name}]:
+async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_str}" for param in params])}) -> Sequence[${model_name}]:
     records = await connection.fetch("${query}", ${", ".join([param.name_in_function for param in params])})
     return convert_records_to_pydantic_models(records=records, pydantic_model_type=${model_name})

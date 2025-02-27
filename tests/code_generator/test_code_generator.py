@@ -1,5 +1,6 @@
 import pathlib
 
+
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_fetch_all_method,
     generate_code_for_query_with_execute_method,
@@ -98,8 +99,8 @@ async def test_code_generator_pydantic_with_bind_params(
         supported_query=SupportedQuery(query=query),
         result_schema=NotEmptyRowSchema(db_row_model),
         bind_params=[
-            BindParam(name_in_function="id", type_=int),
-            BindParam(name_in_function="name", type_=str),
+            BindParam(name_in_function="id", type_=int, is_optional=False),
+            BindParam(name_in_function="name", type_=str, is_optional=True),
         ],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
@@ -133,8 +134,8 @@ async def test_code_generator_execute_with_bind_params(
     actual_generated_code = await generate_code_for_query_with_execute_method(
         supported_query=SupportedQuery(query=query),
         bind_params=[
-            BindParam(name_in_function="id", type_=int),
-            BindParam(name_in_function="name", type_=str),
+            BindParam(name_in_function="id", type_=int, is_optional=False),
+            BindParam(name_in_function="name", type_=str, is_optional=True),
         ],
         function_name=StringInSnakeLowerCase("delete_users"),
         code_quality_improver=code_quality_improver,

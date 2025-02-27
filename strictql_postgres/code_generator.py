@@ -1,3 +1,5 @@
+import dataclasses
+
 from strictql_postgres.code_quality import (
     CodeQualityImprover,
     CodeQualityImproverError,
@@ -9,10 +11,17 @@ from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
 from strictql_postgres.model_name_generator import generate_model_name_by_function_name
 from strictql_postgres.common_types import SupportedQuery, NotEmptyRowSchema, BindParams
+from strictql_postgres.type_str_creator import create_type_str
 
 
 class GenerateCodeError(Exception):
     pass
+
+
+@dataclasses.dataclass
+class BindParamToTemplate:
+    name_in_function: str
+    type_str: str
 
 
 async def generate_code_for_query_with_fetch_all_method(
@@ -51,7 +60,15 @@ async def generate_code_for_query_with_fetch_all_method(
             fields=fields.items(),
             function_name=function_name.value,
             query=supported_query.query,
-            params=bind_params,
+            params=[
+                BindParamToTemplate(
+                    name_in_function=bind_param.name_in_function,
+                    type_str=create_type_str(
+                        type_=bind_param.type_, is_optional=bind_param.is_optional
+                    ),
+                )
+                for bind_param in bind_params
+            ],
         )
 
     try:
@@ -81,7 +98,15 @@ async def generate_code_for_query_with_execute_method(
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
             query=supported_query.query,
-            params=bind_params,
+            params=[
+                BindParamToTemplate(
+                    name_in_function=bind_param.name_in_function,
+                    type_str=create_type_str(
+                        type_=bind_param.type_, is_optional=bind_param.is_optional
+                    ),
+                )
+                for bind_param in bind_params
+            ],
         )
 
     try:
