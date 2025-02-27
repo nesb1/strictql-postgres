@@ -34,7 +34,9 @@ async def generate_code_for_query_with_fetch_all_method(
     model_name = generate_model_name_by_function_name(function_name=function_name)
     rendered_code: str
     if len(bind_params) == 0:
-        mako_template_path = (TEMPLATES_DIR / "pydantic_without_params.txt").read_text()
+        mako_template_path = (
+            TEMPLATES_DIR / "fetch_all_without_params.txt"
+        ).read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             model_name=model_name,
             fields=fields.items(),
@@ -43,10 +45,40 @@ async def generate_code_for_query_with_fetch_all_method(
             params=[],
         )
     else:
-        mako_template_path = (TEMPLATES_DIR / "pydantic_with_params.txt").read_text()
+        mako_template_path = (TEMPLATES_DIR / "fetch_all_with_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             model_name=model_name,
             fields=fields.items(),
+            function_name=function_name.value,
+            query=supported_query.query,
+            params=bind_params,
+        )
+
+    try:
+        return await code_quality_improver.try_to_improve_code(code=rendered_code)
+    except CodeQualityImproverError as code_quality_improver_error:
+        raise GenerateCodeError(
+            f"Code quality improver failed: {format_exception(exception=code_quality_improver_error)}"
+        ) from code_quality_improver_error
+
+
+async def generate_code_for_query_with_execute_method(
+    supported_query: SupportedQuery,
+    bind_params: BindParams,
+    function_name: StringInSnakeLowerCase,
+    code_quality_improver: CodeQualityImprover,
+) -> str:
+    rendered_code: str
+    if len(bind_params) == 0:
+        mako_template_path = (TEMPLATES_DIR / "execute_without_params.txt").read_text()
+        rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
+            function_name=function_name.value,
+            query=supported_query.query,
+            params=[],
+        )
+    else:
+        mako_template_path = (TEMPLATES_DIR / "execute_with_params.txt").read_text()
+        rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
             query=supported_query.query,
             params=bind_params,

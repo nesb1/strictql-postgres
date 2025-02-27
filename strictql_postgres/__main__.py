@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 import asyncpg
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_fetch_all_method,
+    generate_code_for_query_with_execute_method,
 )
 from strictql_postgres.common_types import BindParam, SupportedQuery, NotEmptyRowSchema
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
@@ -26,7 +27,9 @@ app = App()
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
 async def generate(
     query: str,
+    function_name: str,
     param_names: list[str] | None = None,
+    fetch_type: Literal["fetch_all", "execute", "fetch_row"] = "fetch_all",
     dry_run: Annotated[
         bool,
         Parameter(negative="", help="Вывести результат в stdout, не создавать файлы"),
@@ -37,6 +40,7 @@ async def generate(
 
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
+
     supported_query = SupportedQuery(query=query)
     async with asyncpg.create_pool(
         host="127.0.0.1",
@@ -65,18 +69,33 @@ async def generate(
                             name_in_function=param_names[index], type_=parameter_type
                         )
                     )
+    match fetch_type:
+        case "fetch_all":
+            print(
+                await generate_code_for_query_with_fetch_all_method(
+                    supported_query=supported_query,
+                    result_schema=NotEmptyRowSchema(schema=schema),
+                    bind_params=params,
+                    function_name=StringInSnakeLowerCase(function_name),
+                    code_quality_improver=CodeQualityImprover(
+                        mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)
+                    ),
+                )
+            )
+        case "execute":
+            print(
+                await generate_code_for_query_with_execute_method(
+                    supported_query=supported_query,
+                    bind_params=params,
+                    function_name=StringInSnakeLowerCase(function_name),
+                    code_quality_improver=CodeQualityImprover(
+                        mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)
+                    ),
+                )
+            )
 
-    print(
-        await generate_code_for_query_with_fetch_all_method(
-            supported_query=supported_query,
-            result_schema=NotEmptyRowSchema(schema=schema),
-            bind_params=params,
-            function_name=StringInSnakeLowerCase("select_users"),
-            code_quality_improver=CodeQualityImprover(
-                mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)
-            ),
-        )
-    )
+        case "_":
+            raise NotImplementedError()
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
