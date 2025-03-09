@@ -35,6 +35,7 @@ class JoinExpr(Node):
 class SelectStmt(Node):
     targetList: tuple[ResTarget, ...]
     fromClause: tuple[Node, ...] | None
+    valuesLists: tuple[Node, ...] | None
 
 class RangeSubselect(Node):
     lateral: bool
@@ -44,3 +45,4 @@ class RangeSubselect(Node):
 class InsertStmt(Node):
     relation: RangeVar
     cols: tuple[ResTarget, ...]
+    selectStmt: SelectStmt

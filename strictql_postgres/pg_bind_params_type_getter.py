@@ -2,7 +2,8 @@ import dataclasses
 
 import asyncpg
 from asyncpg.prepared_stmt import PreparedStatement
-from pglast.ast import RawStmt, InsertStmt
+from pglast.ast import RawStmt, InsertStmt, SetToDefault
+from pglast import parse_sql
 
 from strictql_postgres.table_field_getter import get_table_fields
 
@@ -29,13 +30,20 @@ async def get_bind_params_python_types(
     stmt = parsed_sql[0].stmt
     if isinstance(stmt, InsertStmt):
         if stmt.relation is None:
-            raise NotImplementedError()
+            raise NotImplementedError("Not supported insert query without relation")
         table_name = stmt.relation.relname
-        cols = [col.name for col in stmt.cols]
+        columns_in_insert_statement = [col.name for col in stmt.cols]
         fields = await get_table_fields(connection=connection, table_name=table_name)
+        indexes_of_values_without_default = []
+        for index, value in enumerate(stmt.selectStmt.valuesLists):
+            if isinstance(value, SetToDefault):
+                continue
+            indexes_of_values_without_default.append(index)
 
         bind_params = []
-        for index, col in enumerate(cols):
+        for index, col in enumerate(columns_in_insert_statement):
+            if index not in indexes_of_values_without_default:
+                continue
             if col not in fields:
                 raise NotImplementedError()
             type_ = parameters[index].name
