@@ -1,0 +1,3 @@
+from .ast import RawStmt
+
+def parse_sql(query: str) -> tuple[RawStmt, ...]: ...
