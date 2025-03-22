@@ -1,16 +1,16 @@
 import dataclasses
 
+from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
+
 from strictql_postgres.code_quality import (
     CodeQualityImprover,
     CodeQualityImproverError,
 )
-from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
-
+from strictql_postgres.common_types import NotEmptyRowSchema, BindParams
 from strictql_postgres.format_exception import format_exception
+from strictql_postgres.model_name_generator import generate_model_name_by_function_name
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
-from strictql_postgres.model_name_generator import generate_model_name_by_function_name
-from strictql_postgres.common_types import SupportedQuery, NotEmptyRowSchema, BindParams
 from strictql_postgres.type_str_creator import create_type_str
 
 
@@ -25,7 +25,7 @@ class BindParamToTemplate:
 
 
 async def generate_code_for_query_with_fetch_all_method(
-    supported_query: SupportedQuery,
+    query: str,
     result_schema: NotEmptyRowSchema,
     bind_params: BindParams,
     function_name: StringInSnakeLowerCase,
@@ -50,7 +50,7 @@ async def generate_code_for_query_with_fetch_all_method(
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=supported_query.query,
+            query=query,
             params=[],
         )
     else:
@@ -59,7 +59,7 @@ async def generate_code_for_query_with_fetch_all_method(
             model_name=model_name,
             fields=fields.items(),
             function_name=function_name.value,
-            query=supported_query.query,
+            query=query,
             params=[
                 BindParamToTemplate(
                     name_in_function=bind_param.name_in_function,
@@ -80,7 +80,7 @@ async def generate_code_for_query_with_fetch_all_method(
 
 
 async def generate_code_for_query_with_execute_method(
-    supported_query: SupportedQuery,
+    query: str,
     bind_params: BindParams,
     function_name: StringInSnakeLowerCase,
     code_quality_improver: CodeQualityImprover,
@@ -90,14 +90,14 @@ async def generate_code_for_query_with_execute_method(
         mako_template_path = (TEMPLATES_DIR / "execute_without_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
-            query=supported_query.query,
+            query=query,
             params=[],
         )
     else:
         mako_template_path = (TEMPLATES_DIR / "execute_with_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
-            query=supported_query.query,
+            query=query,
             params=[
                 BindParamToTemplate(
                     name_in_function=bind_param.name_in_function,

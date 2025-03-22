@@ -1,23 +1,20 @@
 import pathlib
 
-
+from asyncpg import Pool
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_fetch_all_method,
     generate_code_for_query_with_execute_method,
 )
+from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.common_types import (
     BindParam,
-    SupportedQuery,
     ColumnType,
     NotEmptyRowSchema,
 )
-from asyncpg import Pool
-from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from tests.code_generator.expected_generated_code.fetch_all_with_bind_params import (
     FetchAllUsersModel as FetchAllUsersModelWithBindParams,
 )
-
 from tests.code_generator.expected_generated_code.fetch_all_without_bind_params import (
     FetchAllUsersModel as FetchAllUsersModelWithoutBindParams,
 )
@@ -58,7 +55,7 @@ async def test_code_generator_fetch_all_without_bind_params(
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(
-        supported_query=SupportedQuery(query=query),
+        query=query,
         result_schema=NotEmptyRowSchema(db_row_model),
         bind_params=[],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
@@ -96,7 +93,7 @@ async def test_code_generator_pydantic_with_bind_params(
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(
-        supported_query=SupportedQuery(query=query),
+        query=query,
         result_schema=NotEmptyRowSchema(db_row_model),
         bind_params=[
             BindParam(name_in_function="id", type_=int, is_optional=False),
@@ -132,7 +129,7 @@ async def test_code_generator_execute_with_bind_params(
         expected_generated_code = file.read()
 
     actual_generated_code = await generate_code_for_query_with_execute_method(
-        supported_query=SupportedQuery(query=query),
+        query=query,
         bind_params=[
             BindParam(name_in_function="id", type_=int, is_optional=False),
             BindParam(name_in_function="name", type_=str, is_optional=True),
@@ -169,7 +166,7 @@ async def test_code_generator_execute_without_bind_params(
         expected_generated_code = file.read()
 
     actual_generated_code = await generate_code_for_query_with_execute_method(
-        supported_query=SupportedQuery(query=query),
+        query=query,
         bind_params=[],
         function_name=StringInSnakeLowerCase("delete_users"),
         code_quality_improver=code_quality_improver,

@@ -9,7 +9,6 @@ class ColumnType:
 
 
 ColumnName = str
-DataBaseRowModel = dict[ColumnName, ColumnType]
 
 
 @dataclasses.dataclass
@@ -22,15 +21,6 @@ class BindParam:
 BindParams = list[BindParam]
 
 
-@dataclasses.dataclass()
-class SupportedQuery:
-    query: str
-
-    def __post_init__(self) -> None:
-        if not self.query.lower().strip().startswith(("select", "delete", "insert")):
-            raise ValueError(f"Query: {self.query} not supported")
-
-
 @dataclasses.dataclass(frozen=True)
 class NotEmptyRowSchema:
     schema: Mapping[ColumnName, ColumnType]
@@ -38,10 +28,3 @@ class NotEmptyRowSchema:
     def __post_init__(self) -> None:
         if len(self.schema) == 0:
             raise ValueError("Empty schema")
-
-
-@dataclasses.dataclass
-class QueryWithDBInfo:
-    query: SupportedQuery
-    result_row_model: DataBaseRowModel
-    params: BindParams

@@ -1,24 +1,23 @@
 import pathlib
 from dataclasses import dataclass
-
-import pglast
-from cyclopts import App, Parameter
 from typing import Annotated, Literal
 
 import asyncpg
+from cyclopts import App, Parameter
+
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_fetch_all_method,
     generate_code_for_query_with_execute_method,
 )
-from strictql_postgres.common_types import BindParam, SupportedQuery, NotEmptyRowSchema
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
-from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
+from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
 from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types,
 )
 from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
@@ -42,7 +41,6 @@ async def generate(
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    supported_query = SupportedQuery(query=query)
     async with asyncpg.create_pool(
         host="127.0.0.1",
         user="postgres",
@@ -51,7 +49,7 @@ async def generate(
         database="postgres",
     ) as connection_pool:
         async with connection_pool.acquire() as connection:
-            prepared_statement = await connection.prepare(query=supported_query.query)
+            prepared_statement = await connection.prepare(query=query)
 
             schema = get_pg_response_schema_from_prepared_statement(
                 prepared_stmt=prepared_statement,
@@ -61,9 +59,6 @@ async def generate(
             param_types = await get_bind_params_python_types(
                 prepared_statement=prepared_statement,
                 python_type_by_postgres_type=TYPES_MAPPING,
-                parsed_sql=pglast.parse_sql(supported_query.query),
-                make_bind_params_more_optional=False,
-                connection=connection,
             )
             params = []
             if param_names:
@@ -79,7 +74,7 @@ async def generate(
         case "fetch_all":
             print(
                 await generate_code_for_query_with_fetch_all_method(
-                    supported_query=supported_query,
+                    query=query,
                     result_schema=NotEmptyRowSchema(schema=schema),
                     bind_params=params,
                     function_name=StringInSnakeLowerCase(function_name),
@@ -91,7 +86,7 @@ async def generate(
         case "execute":
             print(
                 await generate_code_for_query_with_execute_method(
-                    supported_query=supported_query,
+                    query=query,
                     bind_params=params,
                     function_name=StringInSnakeLowerCase(function_name),
                     code_quality_improver=CodeQualityImprover(
