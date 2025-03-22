@@ -34,6 +34,13 @@ from strictql_postgres.pg_bind_params_type_getter import (
                 BindParamType(str, is_optional=True),
             ],
         ),
+        (
+            "select * from (values (1,'kek')) as v (a,b) where a = any($1::integer[]) and b = any($2::varchar[]);",
+            [
+                BindParamType(list[int], is_optional=True),
+                BindParamType(list[str], is_optional=True),
+            ],
+        ),
     ],
 )
 async def test_get_bind_params_types_for_query(
@@ -43,7 +50,9 @@ async def test_get_bind_params_types_for_query(
 ) -> None:
     python_type_by_postgres_type = {
         "int4": int,
+        "int4[]": list[int],
         "varchar": str,
+        "varchar[]": list[str],
         "text": str,
     }
 

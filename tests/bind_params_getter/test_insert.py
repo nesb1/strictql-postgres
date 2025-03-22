@@ -18,6 +18,14 @@ from strictql_postgres.pg_bind_params_type_getter import (
                 BindParamType(type_=str, is_optional=True),
             ],
         ),
+        (
+            "create table kek (id integer not null, name varchar)",
+            "insert into kek (id, name) select * from unnest($1::integer[], $2::varchar[])",
+            [
+                BindParamType(type_=list[int], is_optional=True),
+                BindParamType(type_=list[str], is_optional=True),
+            ],
+        ),
     ],
 )
 async def test_insert_query(
@@ -35,7 +43,9 @@ async def test_insert_query(
                 prepared_statement=prepared_statement,
                 python_type_by_postgres_type={
                     "int4": int,
+                    "int4[]": list[int],
                     "varchar": str,
+                    "varchar[]": list[str],
                     "text": str,
                 },
             )
