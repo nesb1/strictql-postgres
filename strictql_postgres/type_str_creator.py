@@ -1,5 +1,4 @@
-def create_type_str(type_: type[object], is_optional: bool) -> str:
-    raw_type = type_.__name__
+def create_type_str(type_: str, is_optional: bool) -> str:
     if is_optional:
-        return f"{raw_type} | None"
-    return raw_type
+        return f"{type_} | None"
+    return type_
