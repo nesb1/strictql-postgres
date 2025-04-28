@@ -1,9 +1,9 @@
 import dataclasses
 
-import asyncpg
 import pytest
 from pydantic import BaseModel
 
+import asyncpg
 from asyncpg import Pool
 from strictql_postgres.asyncpg_result_converter import (
     convert_records_to_pydantic_models,

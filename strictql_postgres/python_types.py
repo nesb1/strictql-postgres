@@ -1,8 +1,12 @@
 from __future__ import annotations
-from mako.template import Template  # type: ignore[import-untyped] # mako has not typing annotations
+
 import enum
 from dataclasses import dataclass
-from typing import Union, Literal, Protocol
+from typing import Literal, Mapping, Union
+
+from mako.template import (  # type: ignore[import-untyped] # mako has not typing annotations
+    Template,
+)
 
 from strictql_postgres.templates import TEMPLATES_DIR
 from strictql_postgres.type_str_creator import create_type_str
@@ -48,35 +52,35 @@ class DecimalType(TypeWithImport):
 @dataclass
 class DateType(TypeWithImport):
     is_optional: bool
-    name: Literal["Decimal"] = "date"
-    from_: Literal["decimal"] = "datetime"
+    name: Literal["date"] = "date"
+    from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
 class DateTimeType(TypeWithImport):
     is_optional: bool
-    name: Literal["Decimal"] = "datetime"
-    from_: Literal["decimal"] = "datetime"
+    name: Literal["datetime"] = "datetime"
+    from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
 class TimeType(TypeWithImport):
     is_optional: bool
-    name: Literal["Decimal"] = "time"
-    from_: Literal["decimal"] = "datetime"
+    name: Literal["time"] = "time"
+    from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
 class TimeDeltaType(TypeWithImport):
     is_optional: bool
-    name: Literal["Decimal"] = "timedelta"
-    from_: Literal["decimal"] = "datetime"
+    name: Literal["timedelta"] = "timedelta"
+    from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
 class ModelType:
     name: str
-    fields: dict[str, ALL_TYPES]
+    fields: Mapping[str, ALL_TYPES]
 
 
 @dataclass
@@ -159,10 +163,10 @@ def generate_code_for_model_as_pydantic(
 
     mako_template = (TEMPLATES_DIR / "pydantic_model.txt").read_text()
     model_code = (
-        Template(mako_template)
+        Template(mako_template)  # type: ignore [misc]
         .render(fields=fields, model_name=model_type.name)
         .strip()
     )
-    models.add(model_code)
+    models.add(model_code)  # type: ignore [misc]
 
     return GeneratedCodeWithModelDefinitions(imports=imports, models_code=models)

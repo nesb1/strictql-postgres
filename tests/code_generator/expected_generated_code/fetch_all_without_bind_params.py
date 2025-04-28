@@ -1,7 +1,8 @@
-from pydantic import BaseModel
-from asyncpg import Connection
 from collections.abc import Sequence
 
+from pydantic import BaseModel
+
+from asyncpg import Connection
 from strictql_postgres.api import convert_records_to_pydantic_models
 
 

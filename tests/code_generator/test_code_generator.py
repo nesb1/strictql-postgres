@@ -2,15 +2,15 @@ import pathlib
 
 from asyncpg import Pool
 from strictql_postgres.code_generator import (
-    generate_code_for_query_with_fetch_all_method,
     generate_code_for_query_with_execute_method,
+    generate_code_for_query_with_fetch_all_method,
 )
 from strictql_postgres.code_quality import CodeQualityImprover
 from strictql_postgres.common_types import (
     BindParam,
-    ColumnType,
     NotEmptyRowSchema,
 )
+from strictql_postgres.python_types import SimpleType, SimpleTypes
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from tests.code_generator.expected_generated_code.fetch_all_with_bind_params import (
     FetchAllUsersModel as FetchAllUsersModelWithBindParams,
@@ -50,8 +50,8 @@ async def test_code_generator_fetch_all_without_bind_params(
         expected_generated_code = file.read()
 
     db_row_model = {
-        "id": ColumnType(type_=int, is_optional=True),
-        "name": ColumnType(type_=str, is_optional=True),
+        "id": SimpleType(SimpleTypes.INT, is_optional=True),
+        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(
@@ -61,6 +61,8 @@ async def test_code_generator_fetch_all_without_bind_params(
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
     )
+    with open("actual_fetch_all_without_bind_params.py", mode="w") as file:
+        file.write(actual_generated_code)
     assert actual_generated_code == expected_generated_code
 
 
@@ -88,8 +90,8 @@ async def test_code_generator_pydantic_with_bind_params(
         expected_generated_code = file.read()
 
     db_row_model = {
-        "id": ColumnType(int, is_optional=True),
-        "name": ColumnType(str, is_optional=True),
+        "id": SimpleType(SimpleTypes.INT, is_optional=True),
+        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(

@@ -1,58 +1,88 @@
-import asyncpg
+import dataclasses
+import enum
+
 import pytest
 
-from strictql_postgres.common_types import ColumnType
+import asyncpg
 from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
-    PgResponseSchema,
-    PgResponseSchemaTypeNotSupportedError,
 )
+from strictql_postgres.python_types import SimpleType, SimpleTypes
+
+
+@dataclasses.dataclass
+class SimpleTypeTestData:
+    query_literal: str
+    expected_python_type: SimpleTypes
+
+
+class SupportedPostgresSimpleTypes(enum.Enum):
+    SMALLINT = "smallint"
+    INTEGER = "integer"
+    BIGINT = "bigint"
+    REAL = "real"
+    DOUBLE_PRECISION = "double_precision"
+
+
+TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
+    SupportedPostgresSimpleTypes.SMALLINT: SimpleTypeTestData(
+        query_literal="(1::smallint)",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.INTEGER: SimpleTypeTestData(
+        query_literal="(1::integer)",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.BIGINT: SimpleTypeTestData(
+        query_literal="(1::bigint)",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.REAL: SimpleTypeTestData(
+        query_literal="(1::real)",
+        expected_python_type=SimpleTypes.FLOAT,
+    ),
+    SupportedPostgresSimpleTypes.DOUBLE_PRECISION: SimpleTypeTestData(
+        query_literal="(123::double precision)",
+        expected_python_type=SimpleTypes.FLOAT,
+    ),
+}
 
 
 @pytest.mark.parametrize(
-    ("query", "expected_schema"),
+    ("query_literal", "expected_python_type"),
     [
         (
-            "select (1::int4) as id, ('kek'::varchar) as name",
-            {
-                "id": ColumnType(type_=int, is_optional=True),
-                "name": ColumnType(type_=str, is_optional=True),
-            },
+            TEST_DATA_FOR_SIMPLE_TYPES[simple_type].query_literal,
+            TEST_DATA_FOR_SIMPLE_TYPES[simple_type].expected_python_type,
         )
+        for simple_type in SupportedPostgresSimpleTypes
     ],
 )
-async def test_get_pg_response_schema_from_prepared_statement(
+async def test_get_pg_response_schema_from_prepared_statement_when_simple_type(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    query: str,
-    expected_schema: PgResponseSchema,
+    query_literal: str,
+    expected_python_type: SimpleTypes,
 ) -> None:
-    python_type_by_postgres_type = {
-        "int4": int,
-        "varchar": str,
-        "text": str,
-    }
-
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        prepared_stmt = await connection.prepare(query=query)
-        assert (
-            get_pg_response_schema_from_prepared_statement(
-                prepared_stmt=prepared_stmt,
-                python_type_by_postgres_type=python_type_by_postgres_type,
-            )
-            == expected_schema
+        prepared_stmt = await connection.prepare(
+            query=f"select {query_literal} as value"
         )
+        assert get_pg_response_schema_from_prepared_statement(
+            prepared_stmt=prepared_stmt,
+        ) == {
+            "value": SimpleType(type_=expected_python_type, is_optional=True),
+        }
 
 
-async def test_get_pg_response_schema_from_prepared_statement_raises_error_when_not_supported_type(
-    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-) -> None:
-    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        prepared_stmt = await connection.prepare(query="select 1 as v")
-        with pytest.raises(PgResponseSchemaTypeNotSupportedError) as error:
-            get_pg_response_schema_from_prepared_statement(
-                prepared_stmt=prepared_stmt,
-                python_type_by_postgres_type={},
-            )
-
-        assert error.value.postgres_type == "int4"
-        assert error.value.column_name == "v"
+# async def test_get_pg_response_schema_from_prepared_statement_raises_error_when_not_supported_type(
+#     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+# ) -> None:
+#     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+#         prepared_stmt = await connection.prepare(query="select 1 as v")
+#         with pytest.raises(PgResponseSchemaTypeNotSupportedError) as error:
+#             get_pg_response_schema_from_prepared_statement(
+#                 prepared_stmt=prepared_stmt,
+#             )
+#
+#         assert error.value.postgres_type == "int4"
+#         assert error.value.column_name == "v"

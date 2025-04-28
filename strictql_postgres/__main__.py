@@ -2,12 +2,12 @@ import pathlib
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
-import asyncpg
 from cyclopts import App, Parameter
 
+import asyncpg
 from strictql_postgres.code_generator import (
-    generate_code_for_query_with_fetch_all_method,
     generate_code_for_query_with_execute_method,
+    generate_code_for_query_with_fetch_all_method,
 )
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
@@ -53,7 +53,6 @@ async def generate(
 
             schema = get_pg_response_schema_from_prepared_statement(
                 prepared_stmt=prepared_statement,
-                python_type_by_postgres_type=TYPES_MAPPING,
             )
 
             param_types = await get_bind_params_python_types(

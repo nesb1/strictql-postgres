@@ -1,9 +1,9 @@
-import asyncpg
 import pytest
 
+import asyncpg
 from strictql_postgres.pg_bind_params_type_getter import (
-    get_bind_params_python_types,
     BindParamType,
+    get_bind_params_python_types,
 )
 
 

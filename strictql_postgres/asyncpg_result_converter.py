@@ -1,9 +1,9 @@
 from collections.abc import Sequence
 from typing import TypeVar
 
-from asyncpg import Record
 from pydantic import BaseModel
 
+from asyncpg import Record
 
 T = TypeVar("T", bound=BaseModel)
 

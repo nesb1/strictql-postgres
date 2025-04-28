@@ -1,7 +1,9 @@
 import dataclasses
-from strictql_postgres.common_types import ColumnType
-import asyncpg.prepared_stmt
+from typing import Mapping
 
+import asyncpg.prepared_stmt
+from strictql_postgres.common_types import ColumnType
+from strictql_postgres.python_types import ALL_TYPES, SimpleType, SimpleTypes
 
 PgResponseSchema = dict[str, ColumnType]
 
@@ -12,20 +14,28 @@ class PgResponseSchemaTypeNotSupportedError(Exception):
     column_name: str
 
 
+_PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
+    "int2": SimpleTypes.INT,
+    "int4": SimpleTypes.INT,
+    "int8": SimpleTypes.INT,
+    "float4": SimpleTypes.FLOAT,
+    "float8": SimpleTypes.FLOAT,
+}
+
+
 def get_pg_response_schema_from_prepared_statement(
     prepared_stmt: asyncpg.prepared_stmt.PreparedStatement,
-    python_type_by_postgres_type: dict[str, type[object]],
-) -> PgResponseSchema:
+) -> Mapping[str, ALL_TYPES]:
     pg_response_schema = {}
     for attribute in prepared_stmt.get_attributes():
         try:
-            python_type = python_type_by_postgres_type[attribute.type.name]
+            python_type = _PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES[attribute.type.name]
         except KeyError:
             raise PgResponseSchemaTypeNotSupportedError(
                 postgres_type=attribute.type.name,
                 column_name=attribute.name,
             )
-        pg_response_schema[attribute.name] = ColumnType(
+        pg_response_schema[attribute.name] = SimpleType(
             type_=python_type, is_optional=True
         )
     return pg_response_schema

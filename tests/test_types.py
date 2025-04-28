@@ -1,20 +1,20 @@
 import pytest
 
-from strictql_postgres.types import (
-    SimpleType,
-    SimpleTypes,
-    format_simple_type,
-    format_type_with_import,
-    DecimalType,
-    TypeWithImport,
-    DateType,
+from strictql_postgres.python_types import (
     DateTimeType,
-    TimeType,
-    TimeDeltaType,
-    generate_code_for_model_as_pydantic,
-    ModelType,
+    DateType,
+    DecimalType,
     GeneratedCodeWithModelDefinitions,
     InnerModelType,
+    ModelType,
+    SimpleType,
+    SimpleTypes,
+    TimeDeltaType,
+    TimeType,
+    TypeWithImport,
+    format_simple_type,
+    format_type_with_import,
+    generate_code_for_model_as_pydantic,
 )
 
 
