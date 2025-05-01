@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import asyncpg
 from asyncpg import Pool
 from strictql_postgres.asyncpg_result_converter import (
+    RangeType,
     convert_records_to_pydantic_models,
 )
 
@@ -112,3 +113,18 @@ async def test_all_supported_types_converts(
         assert convert_records_to_pydantic_models(
             records=records, pydantic_model_type=Model
         ) == [Model(a=test_case.python_value)]
+
+
+async def test_convert_record_with_range_type(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+) -> None:
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        records = await connection.fetch(query="select int4range(10,20) as value")
+
+        class Model(BaseModel):  # type: ignore[explicit-any,misc]
+            value: RangeType
+
+        res = convert_records_to_pydantic_models(
+            records=records, pydantic_model_type=Model
+        )
+        assert res == [Model(value=RangeType(a=10, b=20))]
