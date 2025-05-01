@@ -1,5 +1,4 @@
 import dataclasses
-import enum
 
 import pytest
 
@@ -13,29 +12,16 @@ from strictql_postgres.python_types import (
     SimpleTypes,
     TypesWithImport,
 )
+from strictql_postgres.supported_postgres_types import (
+    SupportedPostgresSimpleTypes,
+    SupportedPostgresTypeRequiredImports,
+)
 
 
 @dataclasses.dataclass
 class SimpleTypeTestData:
     query_literal: str
     expected_python_type: SimpleTypes
-
-
-class SupportedPostgresSimpleTypes(enum.Enum):
-    SMALLINT = "smallint"
-    INTEGER = "integer"
-    BIGINT = "bigint"
-    REAL = "real"
-    DOUBLE_PRECISION = "double_precision"
-    VARCHAR = "varchar"
-    CHAR = "char"
-    BPCHAR = "bpchar"
-    TEXT = "text"
-
-
-class SupportedPostgresTypeRequiredImports(enum.Enum):
-    DECIMAL = "decimal"
-    NUMERIC = "numeric"
 
 
 TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
