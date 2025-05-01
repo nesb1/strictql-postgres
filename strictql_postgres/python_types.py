@@ -20,7 +20,7 @@ class SimpleTypes(enum.Enum):
     BYTES = "bytes"
 
 
-ALL_TYPES = Union["ListType", "SimpleType", "TypeWithImport", "InnerModelType"]
+ALL_TYPES = Union["ListType", "SimpleType", "InnerModelType", "TypesWithImport"]
 
 
 @dataclass
@@ -35,43 +35,36 @@ class ListType:
     is_optional: bool
 
 
-@dataclass(init=False)
-class TypeWithImport:
-    is_optional: bool
-    from_: str
-    name: str
-
-
 @dataclass
-class DecimalType(TypeWithImport):
+class DecimalType:
     is_optional: bool
     name: Literal["Decimal"] = "Decimal"
     from_: Literal["decimal"] = "decimal"
 
 
 @dataclass
-class DateType(TypeWithImport):
+class DateType:
     is_optional: bool
     name: Literal["date"] = "date"
     from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
-class DateTimeType(TypeWithImport):
+class DateTimeType:
     is_optional: bool
     name: Literal["datetime"] = "datetime"
     from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
-class TimeType(TypeWithImport):
+class TimeType:
     is_optional: bool
     name: Literal["time"] = "time"
     from_: Literal["datetime"] = "datetime"
 
 
 @dataclass
-class TimeDeltaType(TypeWithImport):
+class TimeDeltaType:
     is_optional: bool
     name: Literal["timedelta"] = "timedelta"
     from_: Literal["datetime"] = "datetime"
@@ -89,7 +82,7 @@ class InnerModelType:
     is_optional: bool
 
 
-TYPES_WITH_IMPORT = [DecimalType]
+TypesWithImport = DecimalType | DateTimeType | DateType | TimeType | TimeDeltaType
 
 
 @dataclass
@@ -128,7 +121,7 @@ def format_simple_type(type_: SimpleType) -> str:
     return f"{type_.type_.value} | None"
 
 
-def format_type_with_import(type_: TypeWithImport) -> FormattedTypeWithImport:
+def format_type_with_import(type_: TypesWithImport) -> FormattedTypeWithImport:
     return FormattedTypeWithImport(
         type_as_str=type_.name if not type_.is_optional else f"{type_.name} | None",
         import_as_str=f"from {type_.from_} import {type_.name}",
@@ -142,7 +135,7 @@ def generate_code_for_model_as_pydantic(
     fields = {}
     models: set[str] = set()
     for name, type_ in model_type.fields.items():
-        if isinstance(type_, TypeWithImport):
+        if isinstance(type_, TypesWithImport):
             imports.add(Import(from_=type_.from_, name=type_.name).format())
             fields[name] = create_type_str(
                 type_=type_.name, is_optional=type_.is_optional

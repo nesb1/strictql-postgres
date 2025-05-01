@@ -7,7 +7,12 @@ import asyncpg
 from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
 )
-from strictql_postgres.python_types import SimpleType, SimpleTypes
+from strictql_postgres.python_types import (
+    DecimalType,
+    SimpleType,
+    SimpleTypes,
+    TypesWithImport,
+)
 
 
 @dataclasses.dataclass
@@ -26,6 +31,11 @@ class SupportedPostgresSimpleTypes(enum.Enum):
     CHAR = "char"
     BPCHAR = "bpchar"
     TEXT = "text"
+
+
+class SupportedPostgresTypeRequiredImports(enum.Enum):
+    DECIMAL = "decimal"
+    NUMERIC = "numeric"
 
 
 TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
@@ -87,6 +97,52 @@ async def test_get_pg_response_schema_from_prepared_statement_when_simple_type(
             prepared_stmt=prepared_stmt,
         ) == {
             "value": SimpleType(type_=expected_python_type, is_optional=True),
+        }
+
+
+@dataclasses.dataclass
+class TypeRequiredImportTestData:
+    query_literal: str
+    expected_python_type: type[TypesWithImport]
+
+
+TEST_DATA_FOR_TYPES_REQUIRED_IMPORT: dict[
+    SupportedPostgresTypeRequiredImports, TypeRequiredImportTestData
+] = {
+    SupportedPostgresTypeRequiredImports.NUMERIC: TypeRequiredImportTestData(
+        query_literal="(123::numeric)",
+        expected_python_type=DecimalType,
+    ),
+    SupportedPostgresTypeRequiredImports.DECIMAL: TypeRequiredImportTestData(
+        query_literal="(123::decimal)",
+        expected_python_type=DecimalType,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("query_literal", "expected_python_type"),
+    [
+        (
+            TEST_DATA_FOR_TYPES_REQUIRED_IMPORT[type_].query_literal,
+            TEST_DATA_FOR_TYPES_REQUIRED_IMPORT[type_].expected_python_type,
+        )
+        for type_ in SupportedPostgresTypeRequiredImports
+    ],
+)
+async def test_get_pg_response_schema_from_prepared_statement_when_type_required_import(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    query_literal: str,
+    expected_python_type: type[TypesWithImport],
+) -> None:
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        prepared_stmt = await connection.prepare(
+            query=f"select {query_literal} as value"
+        )
+        assert get_pg_response_schema_from_prepared_statement(
+            prepared_stmt=prepared_stmt,
+        ) == {
+            "value": expected_python_type(is_optional=True),
         }
 
 

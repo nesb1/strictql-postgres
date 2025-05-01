@@ -11,7 +11,7 @@ from strictql_postgres.python_types import (
     SimpleTypes,
     TimeDeltaType,
     TimeType,
-    TypeWithImport,
+    TypesWithImport,
     format_simple_type,
     format_type_with_import,
     generate_code_for_model_as_pydantic,
@@ -73,7 +73,7 @@ def test_format_simple_types(type_: SimpleType, expected_str: str) -> None:
     ],
 )
 def test_format_types_with_import(
-    type_with_import: TypeWithImport, expected_import: str, expected_type: str
+    type_with_import: TypesWithImport, expected_import: str, expected_type: str
 ) -> None:
     formatted_type = format_type_with_import(type_=type_with_import)
     assert formatted_type.type_as_str == expected_type
