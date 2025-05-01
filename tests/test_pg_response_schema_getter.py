@@ -22,6 +22,10 @@ class SupportedPostgresSimpleTypes(enum.Enum):
     BIGINT = "bigint"
     REAL = "real"
     DOUBLE_PRECISION = "double_precision"
+    VARCHAR = "varchar"
+    CHAR = "char"
+    BPCHAR = "bpchar"
+    TEXT = "text"
 
 
 TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
@@ -44,6 +48,18 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestDat
     SupportedPostgresSimpleTypes.DOUBLE_PRECISION: SimpleTypeTestData(
         query_literal="(123::double precision)",
         expected_python_type=SimpleTypes.FLOAT,
+    ),
+    SupportedPostgresSimpleTypes.VARCHAR: SimpleTypeTestData(
+        query_literal="('text'::varchar)", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.CHAR: SimpleTypeTestData(
+        query_literal="('text'::char)", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.BPCHAR: SimpleTypeTestData(
+        query_literal="('text'::bpchar)", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.TEXT: SimpleTypeTestData(
+        query_literal="('text'::text)", expected_python_type=SimpleTypes.STR
     ),
 }
 

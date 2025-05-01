@@ -20,6 +20,10 @@ _PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
     "int8": SimpleTypes.INT,
     "float4": SimpleTypes.FLOAT,
     "float8": SimpleTypes.FLOAT,
+    "varchar": SimpleTypes.STR,
+    "char": SimpleTypes.STR,
+    "bpchar": SimpleTypes.STR,
+    "text": SimpleTypes.STR,
 }
 
 
