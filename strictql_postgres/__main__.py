@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from cyclopts import App, Parameter
+from pydantic import SecretStr
 
 import asyncpg
 from strictql_postgres.code_generator import (
@@ -11,17 +12,71 @@ from strictql_postgres.code_generator import (
 )
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
+from strictql_postgres.config_manager import (
+    DataBaseSettings,
+    QueryToGenerate,
+    StrictqlSettings,
+)
 from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types,
 )
 from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
 )
+from strictql_postgres.queries_generator import generate_queries
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 app = App()
+
+
+@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
+async def generate_from_config() -> None:
+    """
+    Сгенерировать код для выполнения sql-запросов в Postgres.
+
+    Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
+    """
+
+    # resolve_strictql_settings_from_parsed_settings()
+
+    db = DataBaseSettings(
+        name="db1",
+        connection_url=SecretStr("postgresql://postgres:password@localhost/postgres"),
+    )
+    settings = StrictqlSettings(
+        queries_to_generate={
+            pathlib.Path("select_kek.py"): QueryToGenerate(
+                query="select * from kek",
+                name="select from kek",
+                parameter_names=[],
+                database=db,
+                return_type="list",
+                function_name="select_kek",
+            ),
+            pathlib.Path("dir/dir/select_kek_with_param.py"): QueryToGenerate(
+                query="select * from kek where a = $1",
+                name="select from kek",
+                parameter_names=["a_parameter"],
+                database=db,
+                return_type="list",
+                function_name="select_kek",
+            ),
+            pathlib.Path("sova/les.py"): QueryToGenerate(
+                query="select * from olya where mysh = $1",
+                name="select from olya",
+                parameter_names=["mysh_parameter"],
+                database=db,
+                return_type="list",
+                function_name="select_olya",
+            ),
+        },
+        databases={"db1": db},
+        generated_code_path=pathlib.Path("strictql_postgres/generated_code"),
+    )
+
+    await generate_queries(settings)
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts

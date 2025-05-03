@@ -6,7 +6,10 @@ from asyncpg import Record
 class PoolAcquireContext:
     async def __aenter__(self) -> Connection: ...
     async def __aexit__(
-        self, exc_type: type[BaseException], exc_val: BaseException, exc_tb: object
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
     ) -> None: ...
 
 class Pool:
@@ -39,7 +42,10 @@ class Pool:
     ) -> PreparedStatement: ...
     async def __aenter__(self) -> "Pool": ...
     async def __aexit__(
-        self, exc_type: type[BaseException], exc_val: BaseException, exc_tb: object
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
     ) -> None: ...
 
 def create_pool(
