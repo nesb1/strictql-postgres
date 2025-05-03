@@ -47,3 +47,9 @@ disallow_subclassing_any = "true"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 log_level = "DEBUG"
+
+[tool.strictql-postgres]
+directory = "strctql_postgres/stirctql_generated"
+query_files = [
+    "strictql-users.yaml"
+]
