@@ -1,0 +1,4 @@
+class ${model_name}(BaseModel): # type: ignore[explicit-any,misc]
+% for field_name, field_type in fields.items():
+    ${field_name}: ${field_type}
+% endfor

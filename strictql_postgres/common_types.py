@@ -1,6 +1,8 @@
 import dataclasses
 from typing import Mapping
 
+from strictql_postgres.python_types import ALL_TYPES
+
 
 @dataclasses.dataclass(frozen=True)
 class ColumnType:
@@ -23,7 +25,7 @@ BindParams = list[BindParam]
 
 @dataclasses.dataclass(frozen=True)
 class NotEmptyRowSchema:
-    schema: Mapping[ColumnName, ColumnType]
+    schema: Mapping[ColumnName, ALL_TYPES]
 
     def __post_init__(self) -> None:
         if len(self.schema) == 0:

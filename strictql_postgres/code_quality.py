@@ -24,6 +24,8 @@ async def run_ruff_lint_with_fix(code: str) -> str:
         "-m",
         "ruff",
         "check",
+        "--extend-select",
+        "I",
         "--fix",
         "-",
         stdin=asyncio.subprocess.PIPE,

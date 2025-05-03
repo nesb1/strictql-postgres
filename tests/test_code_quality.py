@@ -5,11 +5,11 @@ import tempfile
 import pytest
 
 from strictql_postgres.code_quality import (
-    run_ruff_lint_with_fix,
-    RuffCodeQualityError,
     MypyCodeQualityError,
-    run_ruff_format,
     MypyRunner,
+    RuffCodeQualityError,
+    run_ruff_format,
+    run_ruff_lint_with_fix,
 )
 from tests.conftest import PROJECT_ROOT
 

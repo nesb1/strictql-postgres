@@ -1,10 +1,10 @@
 import pathlib
 from typing import AsyncIterator
 
-import asyncpg
 import pytest
 
-from strictql_postgres.code_quality import MypyRunner, CodeQualityImprover
+import asyncpg
+from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 
 POSTGRES_HOST = "127.0.0.1"
 POSTGRES_PORT = 5432
