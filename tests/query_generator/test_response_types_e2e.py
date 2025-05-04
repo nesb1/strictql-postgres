@@ -6,15 +6,11 @@ import pydantic
 import pytest
 
 import asyncpg
-from strictql_postgres.code_generator import (
-    generate_code_for_query_with_fetch_all_method,
-)
 from strictql_postgres.code_quality import CodeQualityImprover
-from strictql_postgres.common_types import NotEmptyRowSchema
-from strictql_postgres.pg_response_schema_getter import (
-    get_pg_response_schema_from_prepared_statement,
+from strictql_postgres.query_generator import (
+    QueryToGenerate,
+    generate_query_python_code,
 )
-from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.supported_postgres_types import (
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
@@ -83,33 +79,29 @@ async def test_generate_code_and_execute_for_simple_types_in_response_model(
     query = f"select {query_literal} as value"
     function_name = "fetch_all_test"
 
-    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        prepared_stmt = await connection.prepare(query)
-
-        response_schema = get_pg_response_schema_from_prepared_statement(
-            prepared_stmt=prepared_stmt
-        )
-
-        code = await generate_code_for_query_with_fetch_all_method(
+    code = await generate_query_python_code(
+        query_to_generate=QueryToGenerate(
             query=query,
-            result_schema=NotEmptyRowSchema(schema=response_schema),
-            bind_params=[],
-            function_name=StringInSnakeLowerCase(function_name),
-            code_quality_improver=code_quality_improver,
-        )
+            param_names=[],
+            return_type="list",
+            function_name=function_name,
+        ),
+        connection_pool=asyncpg_connection_pool_to_test_db,
+    )
 
-        generated_module = types.ModuleType("generated_module")
+    generated_module = types.ModuleType("generated_module")
 
-        exec(code, generated_module.__dict__)  # type: ignore[misc]
+    exec(code, generated_module.__dict__)  # type: ignore[misc]
 
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         res = await generated_module.fetch_all_test(connection)  # type: ignore[misc]
 
         assert res[0].value == expected_python_value  # type: ignore[misc]
 
-        model: pydantic.BaseModel = generated_module.FetchAllTestModel
-        assert (
-            model.model_fields["value"].annotation == type(expected_python_value) | None  # type: ignore[misc]
-        )
+    model: pydantic.BaseModel = generated_module.FetchAllTestModel
+    assert (
+        model.model_fields["value"].annotation == type(expected_python_value) | None  # type: ignore[misc]
+    )
 
 
 TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
@@ -145,30 +137,26 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     query = f"select {query_literal} as value"
     function_name = "fetch_all_test"
 
-    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        prepared_stmt = await connection.prepare(query)
-
-        response_schema = get_pg_response_schema_from_prepared_statement(
-            prepared_stmt=prepared_stmt
-        )
-
-        code = await generate_code_for_query_with_fetch_all_method(
+    code = await generate_query_python_code(
+        query_to_generate=QueryToGenerate(
             query=query,
-            result_schema=NotEmptyRowSchema(schema=response_schema),
-            bind_params=[],
-            function_name=StringInSnakeLowerCase(function_name),
-            code_quality_improver=code_quality_improver,
-        )
+            function_name=function_name,
+            param_names=[],
+            return_type="list",
+        ),
+        connection_pool=asyncpg_connection_pool_to_test_db,
+    )
 
-        generated_module = types.ModuleType("generated_module")
+    generated_module = types.ModuleType("generated_module")
 
-        exec(code, generated_module.__dict__)  # type: ignore[misc]
+    exec(code, generated_module.__dict__)  # type: ignore[misc]
 
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         res = await generated_module.fetch_all_test(connection)  # type: ignore[misc]
 
         assert res[0].value == expected_python_value  # type: ignore[misc]
 
-        model: pydantic.BaseModel = generated_module.FetchAllTestModel
-        assert (
-            model.model_fields["value"].annotation == type(expected_python_value) | None  # type: ignore[misc]
-        )
+    model: pydantic.BaseModel = generated_module.FetchAllTestModel
+    assert (
+        model.model_fields["value"].annotation == type(expected_python_value) | None  # type: ignore[misc]
+    )

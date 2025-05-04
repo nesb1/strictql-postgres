@@ -61,8 +61,6 @@ async def test_code_generator_fetch_all_without_bind_params(
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
     )
-    with open("actual_fetch_all_without_bind_params.py", mode="w") as file:
-        file.write(actual_generated_code)
     assert actual_generated_code == expected_generated_code
 
 
