@@ -1,13 +1,19 @@
 import inspect
 import types
 from collections.abc import Sequence
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 import asyncpg
 from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.pg_response_schema_getter import (
+    PgResponseSchemaGetterError,
+    PgResponseSchemaTypeNotSupported,
+)
 from strictql_postgres.query_generator import (
     InvalidParamNames,
+    InvalidResponseSchemaError,
     InvalidSqlQuery,
     QueryToGenerate,
     generate_query_python_code,
@@ -101,3 +107,30 @@ async def test_param_names_not_equals_query_bind_params(
 
     assert error.value.actual_param_names == param_names
     assert error.value.expected_param_names_count == expected_param_names
+
+
+async def test_handle_response_schema_getter_error(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+) -> None:
+    function_name = "fetch_all_test"
+
+    with pytest.raises(InvalidResponseSchemaError) as error:
+        schema_error = PgResponseSchemaTypeNotSupported(
+            postgres_type="kek", column_name="test"
+        )
+        with patch(
+            "strictql_postgres.query_generator.get_pg_response_schema_from_prepared_statement",
+            new=MagicMock(side_effect=PgResponseSchemaGetterError(error=schema_error)),
+        ) as mock:
+            await generate_query_python_code(
+                query_to_generate=QueryToGenerate(
+                    query="select 1",
+                    function_name=function_name,
+                    param_names=[],
+                    return_type="list",
+                ),
+                connection_pool=asyncpg_connection_pool_to_test_db,
+            )
+
+        assert mock.called
+        assert error.value.error == schema_error
