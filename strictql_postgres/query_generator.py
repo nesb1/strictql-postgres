@@ -13,6 +13,10 @@ from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
 from strictql_postgres.pg_bind_params_type_getter import get_bind_params_python_types
 from strictql_postgres.pg_response_schema_getter import (
+    PgResponseSchemaContainsColumnsWithInvalidNames,
+    PgResponseSchemaContainsColumnsWithNotUniqueNames,
+    PgResponseSchemaGetterError,
+    PgResponseSchemaTypeNotSupported,
     get_pg_response_schema_from_prepared_statement,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -22,6 +26,15 @@ TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 class QueryPythonCodeGeneratorError(Exception):
     pass
+
+
+@dataclasses.dataclass
+class InvalidResponseSchemaError(QueryPythonCodeGeneratorError):
+    error: (
+        PgResponseSchemaContainsColumnsWithNotUniqueNames
+        | PgResponseSchemaContainsColumnsWithInvalidNames
+        | PgResponseSchemaTypeNotSupported
+    )
 
 
 @dataclasses.dataclass
@@ -55,9 +68,12 @@ async def generate_query_python_code(
                 query=query_to_generate.query, postgres_error=error.message
             ) from error
 
-        schema = get_pg_response_schema_from_prepared_statement(
-            prepared_stmt=prepared_statement,
-        )
+        try:
+            schema = get_pg_response_schema_from_prepared_statement(
+                prepared_stmt=prepared_statement,
+            )
+        except PgResponseSchemaGetterError as schema_getter_error:
+            raise InvalidResponseSchemaError(error=schema_getter_error.error)
 
         param_types = await get_bind_params_python_types(
             prepared_statement=prepared_statement,
