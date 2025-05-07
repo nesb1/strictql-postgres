@@ -1,7 +1,11 @@
 import dataclasses
-from typing import Literal
+from typing import Literal, Sequence
 
 from asyncpg.prepared_stmt import PreparedStatement
+from strictql_postgres.python_types import ALL_TYPES, SimpleType
+from strictql_postgres.supported_postgres_types import (
+    PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,
+)
 
 
 @dataclasses.dataclass()
@@ -17,17 +21,12 @@ class PgBindParamTypeNotSupportedError(Exception):
 
 async def get_bind_params_python_types(
     prepared_statement: PreparedStatement,
-    python_type_by_postgres_type: dict[str, type[object]],
-) -> list[BindParamType]:
+) -> Sequence[ALL_TYPES]:
     parameters = prepared_statement.get_parameters()
 
     parameters_python_types = []
     for param in parameters:
-        try:
-            python_type = python_type_by_postgres_type[param.name]
-        except KeyError:
-            raise PgBindParamTypeNotSupportedError(postgres_type=param.name)
-        parameters_python_types.append(
-            BindParamType(type_=python_type, is_optional=True)
-        )
+        type_ = PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES.get(param.name)
+        if type_ is not None:
+            parameters_python_types.append(SimpleType(type_=type_, is_optional=True))
     return parameters_python_types

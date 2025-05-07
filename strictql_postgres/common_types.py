@@ -16,8 +16,7 @@ ColumnName = str
 @dataclasses.dataclass
 class BindParam:
     name_in_function: str
-    type_: type[object]
-    is_optional: bool
+    type_: ALL_TYPES
 
 
 BindParams = list[BindParam]

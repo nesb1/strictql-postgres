@@ -1,64 +1,77 @@
-import asyncpg
+import dataclasses
+
 import pytest
 
+import asyncpg
 from strictql_postgres.pg_bind_params_type_getter import (
-    BindParamType,
     get_bind_params_python_types,
 )
+from strictql_postgres.python_types import SimpleType, SimpleTypes
+from strictql_postgres.supported_postgres_types import SupportedPostgresSimpleTypes
+
+
+@dataclasses.dataclass
+class SimpleTypeTestData:
+    bind_param_cast: str
+    expected_python_type: SimpleTypes
+
+
+TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
+    SupportedPostgresSimpleTypes.SMALLINT: SimpleTypeTestData(
+        bind_param_cast="smallint",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.INTEGER: SimpleTypeTestData(
+        bind_param_cast="integer",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.BIGINT: SimpleTypeTestData(
+        bind_param_cast="bigint",
+        expected_python_type=SimpleTypes.INT,
+    ),
+    SupportedPostgresSimpleTypes.REAL: SimpleTypeTestData(
+        bind_param_cast="real",
+        expected_python_type=SimpleTypes.FLOAT,
+    ),
+    SupportedPostgresSimpleTypes.DOUBLE_PRECISION: SimpleTypeTestData(
+        bind_param_cast="double precision",
+        expected_python_type=SimpleTypes.FLOAT,
+    ),
+    SupportedPostgresSimpleTypes.VARCHAR: SimpleTypeTestData(
+        bind_param_cast="varchar", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.CHAR: SimpleTypeTestData(
+        bind_param_cast="char", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.BPCHAR: SimpleTypeTestData(
+        bind_param_cast="bpchar", expected_python_type=SimpleTypes.STR
+    ),
+    SupportedPostgresSimpleTypes.TEXT: SimpleTypeTestData(
+        bind_param_cast="text", expected_python_type=SimpleTypes.STR
+    ),
+}
 
 
 @pytest.mark.parametrize(
-    ("query", "expected_params"),
+    ("query_literal", "expected_python_type"),
     [
-        ("select 1", []),
-        ("select 1", []),
-        (
-            "select * from (values (1)) as v (a) where a = $1;",
-            [BindParamType(int, is_optional=True)],
-        ),
-        (
-            "select * from (values (1)) as v (a) where a = $1;",
-            [BindParamType(int, is_optional=True)],
-        ),
-        (
-            "select * from (values (1,'kek')) as v (a,b) where a = $1 and b = $2;",
-            [
-                BindParamType(int, is_optional=True),
-                BindParamType(str, is_optional=True),
-            ],
-        ),
-        (
-            "select * from (values (1,'kek')) as v (a,b) where a = $1 and b = $2;",
-            [
-                BindParamType(int, is_optional=True),
-                BindParamType(str, is_optional=True),
-            ],
-        ),
-        (
-            "select * from (values (1,'kek')) as v (a,b) where a = any($1::integer[]) and b = any($2::varchar[]);",
-            [
-                BindParamType(list[int], is_optional=True),
-                BindParamType(list[str], is_optional=True),
-            ],
-        ),
+        (test_case.bind_param_cast, test_case.expected_python_type)
+        for postgres_type, test_case in TEST_DATA_FOR_SIMPLE_TYPES.items()
     ],
 )
-async def test_get_bind_params_types_for_query(
+async def test_get_bind_params_types_for_simple_types(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    query: str,
-    expected_params: list[BindParamType],
+    query_literal: str,
+    expected_python_type: SimpleTypes,
 ) -> None:
-    python_type_by_postgres_type = {
-        "int4": int,
-        "int4[]": list[int],
-        "varchar": str,
-        "varchar[]": list[str],
-        "text": str,
-    }
-
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        prepared_statement = await connection.prepare(query)
-        assert expected_params == await get_bind_params_python_types(
-            prepared_statement=prepared_statement,
-            python_type_by_postgres_type=python_type_by_postgres_type,
+        prepared_statement = await connection.prepare(
+            f"select ($1::{query_literal}) as value"
         )
+        actual_bind_params = await get_bind_params_python_types(
+            prepared_statement=prepared_statement,
+        )
+
+        assert actual_bind_params == [
+            SimpleType(type_=expected_python_type, is_optional=True)
+        ]

@@ -14,6 +14,8 @@ from strictql_postgres.model_name_generator import generate_model_name_by_functi
 from strictql_postgres.python_types import (
     ModelType,
     generate_code_for_model_as_pydantic,
+    SimpleType,
+    format_simple_type,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
@@ -66,6 +68,12 @@ async def generate_code_for_query_with_fetch_all_method(
         )
     else:
         mako_template_path = (TEMPLATES_DIR / "fetch_all_with_params.txt").read_text()
+        formatted_bind_params = []
+        for bind_param in bind_params:
+            if isinstance(bind_param.type_, SimpleType):
+                formatted_bind_params.append(format_simple_type(type_=bind_param.type_))
+            else:
+                raise NotImplementedError()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             imports=imports,
             models=models.models_code,
