@@ -96,8 +96,14 @@ async def test_code_generator_pydantic_with_bind_params(
         query=query,
         result_schema=NotEmptyRowSchema(db_row_model),
         bind_params=[
-            BindParam(name_in_function="id", type_=int, is_optional=False),
-            BindParam(name_in_function="name", type_=str, is_optional=True),
+            BindParam(
+                name_in_function="id",
+                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+            ),
+            BindParam(
+                name_in_function="name",
+                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+            ),
         ],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
         code_quality_improver=code_quality_improver,
@@ -131,8 +137,14 @@ async def test_code_generator_execute_with_bind_params(
     actual_generated_code = await generate_code_for_query_with_execute_method(
         query=query,
         bind_params=[
-            BindParam(name_in_function="id", type_=int, is_optional=False),
-            BindParam(name_in_function="name", type_=str, is_optional=True),
+            BindParam(
+                name_in_function="id",
+                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+            ),
+            BindParam(
+                name_in_function="name",
+                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+            ),
         ],
         function_name=StringInSnakeLowerCase("delete_users"),
         code_quality_improver=code_quality_improver,

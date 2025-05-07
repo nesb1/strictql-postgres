@@ -9,8 +9,10 @@ from strictql_postgres.python_types import (
     ALL_TYPES,
     DecimalType,
     SimpleType,
-    SimpleTypes,
     TypesWithImport,
+)
+from strictql_postgres.supported_postgres_types import (
+    PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,
 )
 
 PgResponseSchema = dict[str, ColumnType]
@@ -42,18 +44,6 @@ class PgResponseSchemaGetterError(Exception):
         | PgResponseSchemaContainsColumnsWithNotUniqueNames
     )
 
-
-_PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
-    "int2": SimpleTypes.INT,
-    "int4": SimpleTypes.INT,
-    "int8": SimpleTypes.INT,
-    "float4": SimpleTypes.FLOAT,
-    "float8": SimpleTypes.FLOAT,
-    "varchar": SimpleTypes.STR,
-    "char": SimpleTypes.STR,
-    "bpchar": SimpleTypes.STR,
-    "text": SimpleTypes.STR,
-}
 
 _PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
     str, type[TypesWithImport]
@@ -101,7 +91,7 @@ def get_pg_response_schema_from_prepared_statement(
 
     pg_response_schema: dict[str, ALL_TYPES] = {}
     for attribute in prepared_stmt.get_attributes():
-        python_simple_type = _PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES.get(
+        python_simple_type = PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES.get(
             attribute.type.name
         )
 

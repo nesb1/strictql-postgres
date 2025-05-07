@@ -1,31 +1,31 @@
-import asyncpg
 import pydantic
 import pytest
 
+import asyncpg
 from strictql_postgres.complex_type_converter import (
     convert_postgres_complex_type_to_bind_param_value,
 )
 
 
-class SimpleType(pydantic.BaseModel):
+class SimpleType(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
     a: int
     b: int
 
 
-class TypeWithOptional(pydantic.BaseModel):
+class TypeWithOptional(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
     a: int | None
 
 
-class TypeWithList(pydantic.BaseModel):
-    l: list[int]
+class TypeWithList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+    l: list[int]  # noqa: E741
 
 
-class TypeWithInnerList(pydantic.BaseModel):
-    l: list[SimpleType]
+class TypeWithInnerList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+    l: list[SimpleType]  # noqa: E741
 
 
-class TypeWithInnerInnerList(pydantic.BaseModel):
-    l: list[TypeWithInnerList]
+class TypeWithInnerInnerList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+    l: list[TypeWithInnerList]  # noqa: E741
 
 
 @pytest.mark.parametrize(

@@ -77,7 +77,6 @@ async def generate_query_python_code(
 
         param_types = await get_bind_params_python_types(
             prepared_statement=prepared_statement,
-            python_type_by_postgres_type=TYPES_MAPPING,
         )
 
         if len(param_types) != len(query_to_generate.param_names):
@@ -92,8 +91,7 @@ async def generate_query_python_code(
                 params.append(
                     BindParam(
                         name_in_function=query_to_generate.param_names[index],
-                        type_=parameter_type.type_,
-                        is_optional=parameter_type.is_optional,
+                        type_=parameter_type,
                     )
                 )
     match query_to_generate.return_type:
