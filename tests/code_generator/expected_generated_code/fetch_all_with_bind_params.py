@@ -12,7 +12,7 @@ class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any,misc]
 
 
 async def fetch_all_users(
-    connection: Connection, id: int, name: str | None
+    connection: Connection, id: int | None, name: str | None
 ) -> Sequence[FetchAllUsersModel]:
     records = await connection.fetch(
         "SELECT * FROM users where id = $1 and name = $2;", id, name
