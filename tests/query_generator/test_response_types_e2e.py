@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import decimal
 import types
 
@@ -112,8 +113,49 @@ TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
         expected_python_value=decimal.Decimal("1.012"),
     ),
     SupportedPostgresTypeRequiredImports.DECIMAL: TypeTestData(
-        query_literal="('1.012'::numeric)",
+        query_literal="('1.012'::decimal)",
         expected_python_value=decimal.Decimal("1.012"),
+    ),
+    SupportedPostgresTypeRequiredImports.DATE: TypeTestData(
+        query_literal="('2020-07-09'::date)",
+        expected_python_value=datetime.date(year=2020, month=7, day=9),
+    ),
+    SupportedPostgresTypeRequiredImports.TIME: TypeTestData(
+        query_literal="('09:08:00'::time without time zone)",
+        expected_python_value=datetime.time(hour=9, minute=8, second=0),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMETZ: TypeTestData(
+        query_literal="('09:08:00'::time with time zone)",
+        expected_python_value=datetime.time(
+            hour=9, minute=8, second=0, tzinfo=datetime.timezone.utc
+        ),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeTestData(
+        query_literal="('2020-07-09T09:08:00'::timestamp with time zone)",
+        expected_python_value=datetime.datetime(
+            year=2020,
+            month=7,
+            day=9,
+            hour=9,
+            minute=8,
+            second=0,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeTestData(
+        query_literal="('2020-07-09T09:08:00'::timestamp without time zone)",
+        expected_python_value=datetime.datetime(
+            year=2020,
+            month=7,
+            day=9,
+            hour=9,
+            minute=8,
+            second=0,
+        ),
+    ),
+    SupportedPostgresTypeRequiredImports.INTERVAL: TypeTestData(
+        query_literal="('1 year'::interval)",
+        expected_python_value=datetime.timedelta(days=365),
     ),
 }
 

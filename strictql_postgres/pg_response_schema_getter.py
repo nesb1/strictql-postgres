@@ -22,17 +22,26 @@ class PgResponseSchemaContainsColumnsWithInvalidNames:
     column_names: list[str]
     invalid_column_names: list[str]
 
+    def __str__(self) -> str:
+        return f"column_names: {self.column_names}, invalid_column_names: {self.invalid_column_names}"
+
 
 @dataclasses.dataclass
 class PgResponseSchemaContainsColumnsWithNotUniqueNames:
     column_names: list[str]
     not_unique_column_names: set[str]
 
+    def __str__(self) -> str:
+        return f"column_names: {self.column_names}, not_unique_column_names: {self.not_unique_column_names}"
+
 
 @dataclasses.dataclass
 class PgResponseSchemaTypeNotSupported:
     postgres_type: str
     column_name: str
+
+    def __str__(self) -> str:
+        return f"postgres_type: {self.postgres_type}, column_name: {self.column_name}"
 
 
 @dataclasses.dataclass

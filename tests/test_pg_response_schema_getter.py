@@ -10,9 +10,13 @@ from strictql_postgres.pg_response_schema_getter import (
     get_pg_response_schema_from_prepared_statement,
 )
 from strictql_postgres.python_types import (
+    DateTimeType,
+    DateType,
     DecimalType,
     SimpleType,
     SimpleTypes,
+    TimeDeltaType,
+    TimeType,
     TypesWithImport,
 )
 from strictql_postgres.supported_postgres_types import (
@@ -105,6 +109,30 @@ TEST_DATA_FOR_TYPES_REQUIRED_IMPORT: dict[
     SupportedPostgresTypeRequiredImports.DECIMAL: TypeRequiredImportTestData(
         query_literal="(123::decimal)",
         expected_python_type=DecimalType,
+    ),
+    SupportedPostgresTypeRequiredImports.DATE: TypeRequiredImportTestData(
+        query_literal="(now()::date)",
+        expected_python_type=DateType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIME: TypeRequiredImportTestData(
+        query_literal="(now()::time)",
+        expected_python_type=TimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMETZ: TypeRequiredImportTestData(
+        query_literal="(now()::timetz)",
+        expected_python_type=TimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeRequiredImportTestData(
+        query_literal="(now()::timestamp without time zone)",
+        expected_python_type=DateTimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeRequiredImportTestData(
+        query_literal="(now()::timestamp with time zone)",
+        expected_python_type=DateTimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.INTERVAL: TypeRequiredImportTestData(
+        query_literal="('1 year'::interval)",
+        expected_python_type=TimeDeltaType,
     ),
 }
 

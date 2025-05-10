@@ -1,4 +1,6 @@
+import logging
 import pathlib
+import sys
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
@@ -10,7 +12,9 @@ from strictql_postgres.config_manager import (
     QueryToGenerate,
     StrictqlSettings,
 )
-from strictql_postgres.queries_generator import generate_queries
+from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
+
+logger = logging.getLogger(__name__)
 
 TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
@@ -34,26 +38,22 @@ async def generate_from_config() -> None:
     settings = StrictqlSettings(
         queries_to_generate={
             pathlib.Path("select_kek.py"): QueryToGenerate(
-                query="select a from kek where a = $1 and varchar_col = $2 and char_col = $3 and text_col = $4 and bpchar_col = $5 and dec = $6",
-                name="select from kek",
-                parameter_names=[
-                    "a",
-                    "varchar_col",
-                    "char_col",
-                    "text_col",
-                    "bpchar_col",
-                    "dec",
-                ],
+                query="select * from testdt where dt6 > $1;",
+                name="select from testdt",
+                parameter_names=["dt6"],
                 database=db,
                 return_type="list",
-                function_name="select_kek",
+                function_name="select_dt",
             ),
         },
         databases={"db1": db},
         generated_code_path=pathlib.Path("strictql_postgres/generated_code"),
     )
-
-    await generate_queries(settings)
+    try:
+        await generate_queries(settings)
+    except StrictqlGeneratorError as error:
+        logger.error(error)
+        sys.exit(1)
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts

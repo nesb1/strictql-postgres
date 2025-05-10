@@ -37,6 +37,9 @@ class InvalidResponseSchemaError(QueryPythonCodeGeneratorError):
         | PgResponseSchemaTypeNotSupported
     )
 
+    def __str__(self) -> str:
+        return f"Invalid response schema: {self.error}"
+
 
 @dataclasses.dataclass
 class InvalidSqlQuery(QueryPythonCodeGeneratorError):
