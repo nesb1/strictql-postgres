@@ -1,6 +1,14 @@
 import enum
 
-from strictql_postgres.python_types import DecimalType, SimpleTypes, TypesWithImport
+from strictql_postgres.python_types import (
+    DateTimeType,
+    DateType,
+    DecimalType,
+    SimpleTypes,
+    TimeDeltaType,
+    TimeType,
+    TypesWithImport,
+)
 
 
 class SupportedPostgresSimpleTypes(enum.Enum):
@@ -18,6 +26,12 @@ class SupportedPostgresSimpleTypes(enum.Enum):
 class SupportedPostgresTypeRequiredImports(enum.Enum):
     DECIMAL = "decimal"
     NUMERIC = "numeric"
+    DATE = "date"
+    TIME = "time"
+    TIMETZ = "timetz"
+    TIMESTAMPTZ = "timestamptz"
+    TIMESTAMP = "timestamp"
+    INTERVAL = "interval"
 
 
 PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
@@ -37,4 +51,10 @@ PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
 ] = {
     "decimal": DecimalType,
     "numeric": DecimalType,
+    "date": DateType,
+    "time": TimeType,
+    "timetz": TimeType,
+    "interval": TimeDeltaType,
+    "timestamp": DateTimeType,
+    "timestamptz": DateTimeType,
 }

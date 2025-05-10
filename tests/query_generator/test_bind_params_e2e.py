@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import decimal
 import inspect
 import types
@@ -121,6 +122,38 @@ TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
     SupportedPostgresTypeRequiredImports.DECIMAL: TypeTestData(
         bind_param_cast="numeric",
         value=decimal.Decimal("1.012"),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeTestData(
+        bind_param_cast="timestamp",
+        value=datetime.datetime(year=2021, month=1, day=1, hour=1, minute=1, second=1),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeTestData(
+        bind_param_cast="timestamptz",
+        value=datetime.datetime(
+            year=2021,
+            month=1,
+            day=1,
+            hour=1,
+            minute=1,
+            second=1,
+            tzinfo=datetime.timezone.utc,
+        ),
+    ),
+    SupportedPostgresTypeRequiredImports.TIME: TypeTestData(
+        bind_param_cast="time",
+        value=datetime.time(hour=1, minute=1, second=1),
+    ),
+    SupportedPostgresTypeRequiredImports.TIMETZ: TypeTestData(
+        bind_param_cast="timetz",
+        value=datetime.time(hour=1, minute=1, second=1, tzinfo=datetime.timezone.utc),
+    ),
+    SupportedPostgresTypeRequiredImports.DATE: TypeTestData(
+        bind_param_cast="date",
+        value=datetime.date(year=2021, month=1, day=1),
+    ),
+    SupportedPostgresTypeRequiredImports.INTERVAL: TypeTestData(
+        bind_param_cast="interval",
+        value=datetime.timedelta(days=1),
     ),
 }
 

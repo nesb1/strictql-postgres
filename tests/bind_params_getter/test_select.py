@@ -7,9 +7,13 @@ from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types,
 )
 from strictql_postgres.python_types import (
+    DateTimeType,
+    DateType,
     DecimalType,
     SimpleType,
     SimpleTypes,
+    TimeDeltaType,
+    TimeType,
     TypesWithImport,
 )
 from strictql_postgres.supported_postgres_types import (
@@ -99,8 +103,32 @@ TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
         expected_python_type=DecimalType,
     ),
     SupportedPostgresTypeRequiredImports.DECIMAL: TypeWithImportTestData(
-        bind_param_cast="numeric",
+        bind_param_cast="decimal",
         expected_python_type=DecimalType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeWithImportTestData(
+        bind_param_cast="timestamp",
+        expected_python_type=DateTimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeWithImportTestData(
+        bind_param_cast="timestamptz",
+        expected_python_type=DateTimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIME: TypeWithImportTestData(
+        bind_param_cast="time",
+        expected_python_type=TimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.TIMETZ: TypeWithImportTestData(
+        bind_param_cast="timetz",
+        expected_python_type=TimeType,
+    ),
+    SupportedPostgresTypeRequiredImports.DATE: TypeWithImportTestData(
+        bind_param_cast="date",
+        expected_python_type=DateType,
+    ),
+    SupportedPostgresTypeRequiredImports.INTERVAL: TypeWithImportTestData(
+        bind_param_cast="interval",
+        expected_python_type=TimeDeltaType,
     ),
 }
 
@@ -120,7 +148,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     bind_param_cast: str,
     param: type[TypesWithImport],
 ) -> None:
-    query = f"select $1::{bind_param_cast} as value"
+    query = f"select ($1::{bind_param_cast}) as value"
 
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         prepared_statement = await connection.prepare(query)
