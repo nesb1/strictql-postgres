@@ -6,8 +6,16 @@ import asyncpg
 from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types,
 )
-from strictql_postgres.python_types import SimpleType, SimpleTypes
-from strictql_postgres.supported_postgres_types import SupportedPostgresSimpleTypes
+from strictql_postgres.python_types import (
+    DecimalType,
+    SimpleType,
+    SimpleTypes,
+    TypesWithImport,
+)
+from strictql_postgres.supported_postgres_types import (
+    SupportedPostgresSimpleTypes,
+    SupportedPostgresTypeRequiredImports,
+)
 
 
 @dataclasses.dataclass
@@ -75,3 +83,50 @@ async def test_get_bind_params_types_for_simple_types(
         assert actual_bind_params == [
             SimpleType(type_=expected_python_type, is_optional=True)
         ]
+
+
+@dataclasses.dataclass
+class TypeWithImportTestData:
+    bind_param_cast: str
+    expected_python_type: type[TypesWithImport]
+
+
+TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
+    SupportedPostgresTypeRequiredImports, TypeWithImportTestData
+] = {
+    SupportedPostgresTypeRequiredImports.NUMERIC: TypeWithImportTestData(
+        bind_param_cast="numeric",
+        expected_python_type=DecimalType,
+    ),
+    SupportedPostgresTypeRequiredImports.DECIMAL: TypeWithImportTestData(
+        bind_param_cast="numeric",
+        expected_python_type=DecimalType,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("bind_param_cast", "param"),
+    [
+        (
+            TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].bind_param_cast,
+            TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].expected_python_type,
+        )
+        for data_type in SupportedPostgresTypeRequiredImports
+    ],
+)
+async def test_generate_code_and_execute_for_types_with_import_in_response_model(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    bind_param_cast: str,
+    param: type[TypesWithImport],
+) -> None:
+    query = f"select $1::{bind_param_cast} as value"
+
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        prepared_statement = await connection.prepare(query)
+
+        actual_bind_params = await get_bind_params_python_types(
+            prepared_statement=prepared_statement
+        )
+
+        assert actual_bind_params == [param(is_optional=True)]

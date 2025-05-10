@@ -45,12 +45,12 @@ async def generate_code_for_query_with_fetch_all_method(
     formatted_type = format_type(
         type=InnerModelType(model_type=model_type, is_optional=False),
     )
-    imports = [
+    imports = {
         "from asyncpg import Connection",
         "from collections.abc import Sequence",
         "from strictql_postgres.api import convert_records_to_pydantic_models",
-    ]
-    imports += list(formatted_type.imports)
+    }
+    imports |= formatted_type.imports
     rendered_code: str
     if len(bind_params) == 0:
         mako_template_path = (
@@ -71,6 +71,7 @@ async def generate_code_for_query_with_fetch_all_method(
         for bind_param in bind_params:
             formatted_type = format_type(bind_param.type_)
             models |= formatted_type.models_code
+            imports |= formatted_type.imports
             formatted_bind_params.append(
                 BindParamToTemplate(
                     name_in_function=bind_param.name_in_function,
@@ -101,10 +102,12 @@ async def generate_code_for_query_with_execute_method(
     code_quality_improver: CodeQualityImprover,
 ) -> str:
     rendered_code: str
+    imports = {"from asyncpg import Connection"}
     if len(bind_params) == 0:
         mako_template_path = (TEMPLATES_DIR / "execute_without_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
+            imports=imports,
             query=query,
             params=[],
         )
@@ -116,6 +119,7 @@ async def generate_code_for_query_with_execute_method(
         for bind_param in bind_params:
             formatted_type = format_type(bind_param.type_)
             models |= formatted_type.models_code
+            imports |= formatted_type.imports
             formatted_bind_params.append(
                 BindParamToTemplate(
                     name_in_function=bind_param.name_in_function,
@@ -127,6 +131,8 @@ async def generate_code_for_query_with_execute_method(
             function_name=function_name.value,
             query=query,
             params=formatted_bind_params,
+            imports=imports,
+            models=models,
         )
 
     try:

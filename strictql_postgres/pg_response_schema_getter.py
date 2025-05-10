@@ -7,12 +7,11 @@ import asyncpg.prepared_stmt
 from strictql_postgres.common_types import ColumnType
 from strictql_postgres.python_types import (
     ALL_TYPES,
-    DecimalType,
     SimpleType,
-    TypesWithImport,
 )
 from strictql_postgres.supported_postgres_types import (
     PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,
+    PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT,
 )
 
 PgResponseSchema = dict[str, ColumnType]
@@ -43,14 +42,6 @@ class PgResponseSchemaGetterError(Exception):
         | PgResponseSchemaContainsColumnsWithInvalidNames
         | PgResponseSchemaContainsColumnsWithNotUniqueNames
     )
-
-
-_PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
-    str, type[TypesWithImport]
-] = {
-    "decimal": DecimalType,
-    "numeric": DecimalType,
-}
 
 
 def get_pg_response_schema_from_prepared_statement(
@@ -101,7 +92,7 @@ def get_pg_response_schema_from_prepared_statement(
             )
             continue
 
-        type_with_import = _PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT.get(
+        type_with_import = PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT.get(
             attribute.type.name
         )
 

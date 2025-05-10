@@ -34,28 +34,19 @@ async def generate_from_config() -> None:
     settings = StrictqlSettings(
         queries_to_generate={
             pathlib.Path("select_kek.py"): QueryToGenerate(
-                query="select * from kek",
+                query="select a from kek where a = $1 and varchar_col = $2 and char_col = $3 and text_col = $4 and bpchar_col = $5 and dec = $6",
                 name="select from kek",
-                parameter_names=[],
+                parameter_names=[
+                    "a",
+                    "varchar_col",
+                    "char_col",
+                    "text_col",
+                    "bpchar_col",
+                    "dec",
+                ],
                 database=db,
                 return_type="list",
                 function_name="select_kek",
-            ),
-            pathlib.Path("dir/dir/select_kek_with_param.py"): QueryToGenerate(
-                query="select * from kek where a = $1",
-                name="select from kek",
-                parameter_names=["a_parameter"],
-                database=db,
-                return_type="list",
-                function_name="select_kek",
-            ),
-            pathlib.Path("sova/les.py"): QueryToGenerate(
-                query="select * from olya where mysh = $1",
-                name="select from olya",
-                parameter_names=["mysh_parameter"],
-                database=db,
-                return_type="list",
-                function_name="select_olya",
             ),
         },
         databases={"db1": db},
