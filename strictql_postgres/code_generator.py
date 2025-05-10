@@ -12,12 +12,12 @@ from strictql_postgres.common_types import BindParams, NotEmptyRowSchema
 from strictql_postgres.format_exception import format_exception
 from strictql_postgres.model_name_generator import generate_model_name_by_function_name
 from strictql_postgres.python_types import (
+    InnerModelType,
     ModelType,
-    generate_code_for_model_as_pydantic,
+    format_type,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.templates import TEMPLATES_DIR
-from strictql_postgres.type_str_creator import create_type_str
 
 
 class GenerateCodeError(Exception):
@@ -42,15 +42,15 @@ async def generate_code_for_query_with_fetch_all_method(
         fields=result_schema.schema,
     )
 
-    models = generate_code_for_model_as_pydantic(
-        model_type=model_type,
+    formatted_type = format_type(
+        type=InnerModelType(model_type=model_type, is_optional=False),
     )
-    imports = [
+    imports = {
         "from asyncpg import Connection",
         "from collections.abc import Sequence",
         "from strictql_postgres.api import convert_records_to_pydantic_models",
-    ]
-    imports += list(models.imports)
+    }
+    imports |= formatted_type.imports
     rendered_code: str
     if len(bind_params) == 0:
         mako_template_path = (
@@ -58,30 +58,33 @@ async def generate_code_for_query_with_fetch_all_method(
         ).read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             imports=imports,
-            model_name=model_type.name,
+            model_name=formatted_type.type_,
             function_name=function_name.value,
-            models=models.models_code,
+            models=formatted_type.models_code,
             query=query,
             params=[],
         )
     else:
         mako_template_path = (TEMPLATES_DIR / "fetch_all_with_params.txt").read_text()
+        formatted_bind_params = []
+        models = formatted_type.models_code
+        for bind_param in bind_params:
+            formatted_type = format_type(bind_param.type_)
+            models |= formatted_type.models_code
+            imports |= formatted_type.imports
+            formatted_bind_params.append(
+                BindParamToTemplate(
+                    name_in_function=bind_param.name_in_function,
+                    type_str=formatted_type.type_,
+                )
+            )
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             imports=imports,
-            models=models.models_code,
+            models=models,
             function_name=function_name.value,
             model_name=model_type.name,
             query=query,
-            params=[
-                BindParamToTemplate(
-                    name_in_function=bind_param.name_in_function,
-                    type_str=create_type_str(
-                        type_=bind_param.type_.__name__,
-                        is_optional=bind_param.is_optional,
-                    ),
-                )
-                for bind_param in bind_params
-            ],
+            params=formatted_bind_params,
         )
 
     try:
@@ -99,28 +102,37 @@ async def generate_code_for_query_with_execute_method(
     code_quality_improver: CodeQualityImprover,
 ) -> str:
     rendered_code: str
+    imports = {"from asyncpg import Connection"}
     if len(bind_params) == 0:
         mako_template_path = (TEMPLATES_DIR / "execute_without_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
+            imports=imports,
             query=query,
             params=[],
         )
     else:
         mako_template_path = (TEMPLATES_DIR / "execute_with_params.txt").read_text()
+
+        formatted_bind_params = []
+        models = set()
+        for bind_param in bind_params:
+            formatted_type = format_type(bind_param.type_)
+            models |= formatted_type.models_code
+            imports |= formatted_type.imports
+            formatted_bind_params.append(
+                BindParamToTemplate(
+                    name_in_function=bind_param.name_in_function,
+                    type_str=formatted_type.type_,
+                )
+            )
+
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
             function_name=function_name.value,
             query=query,
-            params=[
-                BindParamToTemplate(
-                    name_in_function=bind_param.name_in_function,
-                    type_str=create_type_str(
-                        type_=bind_param.type_.__name__,
-                        is_optional=bind_param.is_optional,
-                    ),
-                )
-                for bind_param in bind_params
-            ],
+            params=formatted_bind_params,
+            imports=imports,
+            models=models,
         )
 
     try:

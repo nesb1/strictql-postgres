@@ -133,6 +133,7 @@ class TestModel(BaseModel): # type: ignore[explicit-any,misc]
                 "from datetime import time",
                 "from datetime import date",
             },
+            main_model_name="TestModel",
             models_code={inner_model_code.strip(), test_model_code.strip()},
         )
         == res

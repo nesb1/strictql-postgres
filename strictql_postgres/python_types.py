@@ -109,10 +109,18 @@ class FormattedTypeWithImport:
     import_as_str: str
 
 
-@dataclass()
+@dataclass(frozen=True)
 class GeneratedCodeWithModelDefinitions:
     imports: set[str]
+    main_model_name: str
     models_code: set[str]
+
+
+@dataclass(frozen=True)
+class FormattedType:
+    imports: set[str]
+    models_code: set[str]
+    type_: str
 
 
 def format_simple_type(type_: SimpleType) -> str:
@@ -162,4 +170,29 @@ def generate_code_for_model_as_pydantic(
     )
     models.add(model_code)  # type: ignore [misc]
 
-    return GeneratedCodeWithModelDefinitions(imports=imports, models_code=models)
+    return GeneratedCodeWithModelDefinitions(
+        imports=imports, models_code=models, main_model_name=model_type.name
+    )
+
+
+def format_type(type: ALL_TYPES) -> FormattedType:
+    if isinstance(type, SimpleType):
+        return FormattedType(
+            imports=set(),
+            models_code=set(),
+            type_=format_simple_type(type_=type),
+        )
+    if isinstance(type, TypesWithImport):
+        return FormattedType(
+            imports={f"from {type.from_} import {type.name}"},
+            models_code=set(),
+            type_=create_type_str(type_=type.name, is_optional=type.is_optional),
+        )
+    if isinstance(type, InnerModelType):
+        generated_code = generate_code_for_model_as_pydantic(model_type=type.model_type)
+        return FormattedType(
+            imports=generated_code.imports,
+            models_code=generated_code.models_code,
+            type_=type.model_type.name,
+        )
+    raise NotImplementedError(type)
