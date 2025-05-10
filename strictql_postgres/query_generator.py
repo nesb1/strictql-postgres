@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import asyncpg
 from asyncpg.exceptions import PostgresSyntaxError
 from strictql_postgres.code_generator import (
+    generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
 )
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
@@ -49,12 +50,19 @@ class InvalidParamNames(QueryPythonCodeGeneratorError):
     expected_param_names_count: int
     actual_param_names: list[str]
 
+    def __str__(self) -> str:
+        return f"""{{
+query: {self.query},
+expected_param_names_count: {self.expected_param_names_count},
+actual_param_names: {self.actual_param_names}
+}}"""
+
 
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
     function_name: str
     param_names: list[str]
-    return_type: Literal["list"]
+    return_type: Literal["list", "execute"]
 
 
 async def generate_query_python_code(
@@ -94,6 +102,7 @@ async def generate_query_python_code(
                         type_=parameter_type,
                     )
                 )
+    improver = CodeQualityImprover(mypy_runner=MypyRunner(mypy_path=pathlib.Path.cwd()))
     match query_to_generate.return_type:
         case "list":
             return await generate_code_for_query_with_fetch_all_method(
@@ -101,9 +110,14 @@ async def generate_query_python_code(
                 result_schema=NotEmptyRowSchema(schema=schema),
                 bind_params=params,
                 function_name=StringInSnakeLowerCase(query_to_generate.function_name),
-                code_quality_improver=CodeQualityImprover(
-                    mypy_runner=MypyRunner(mypy_path=pathlib.Path.cwd())
-                ),
+                code_quality_improver=improver,
+            )
+        case "execute":
+            return await generate_code_for_query_with_execute_method(
+                query=query_to_generate.query,
+                bind_params=params,
+                function_name=StringInSnakeLowerCase(query_to_generate.function_name),
+                code_quality_improver=improver,
             )
 
         case "_":

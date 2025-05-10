@@ -1,6 +1,6 @@
 import enum
 
-from strictql_postgres.python_types import SimpleTypes
+from strictql_postgres.python_types import DecimalType, SimpleTypes, TypesWithImport
 
 
 class SupportedPostgresSimpleTypes(enum.Enum):
@@ -30,4 +30,11 @@ PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
     "char": SimpleTypes.STR,
     "bpchar": SimpleTypes.STR,
     "text": SimpleTypes.STR,
+}
+
+PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
+    str, type[TypesWithImport]
+] = {
+    "decimal": DecimalType,
+    "numeric": DecimalType,
 }

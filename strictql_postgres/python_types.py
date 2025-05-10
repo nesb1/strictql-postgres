@@ -186,7 +186,7 @@ def format_type(type: ALL_TYPES) -> FormattedType:
         return FormattedType(
             imports={f"from {type.from_} import {type.name}"},
             models_code=set(),
-            type_=type.name,
+            type_=create_type_str(type_=type.name, is_optional=type.is_optional),
         )
     if isinstance(type, InnerModelType):
         generated_code = generate_code_for_model_as_pydantic(model_type=type.model_type)
