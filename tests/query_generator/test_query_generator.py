@@ -7,6 +7,7 @@ import pytest
 
 import asyncpg
 from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.config_manager import Parameter
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaGetterError,
     PgResponseSchemaTypeNotSupported,
@@ -33,7 +34,7 @@ async def test_query_invalid(
             query_to_generate=QueryToGenerate(
                 query=query,
                 function_name=function_name,
-                param_names=[],
+                params=[],
                 return_type="list",
             ),
             connection_pool=asyncpg_connection_pool_to_test_db,
@@ -53,7 +54,10 @@ async def test_param_names_equals_query_bind_params(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
             function_name=function_name,
-            param_names=["param1", "param2"],
+            params=[
+                Parameter(name="param1", is_optional=True),
+                Parameter(name="param2", is_optional=True),
+            ],
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
@@ -95,17 +99,20 @@ async def test_param_names_not_equals_query_bind_params(
     function_name = "fetch_all_test"
 
     with pytest.raises(InvalidParamNames) as error:
+        params = [
+            Parameter(name=parm_name, is_optional=True) for parm_name in param_names
+        ]
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
                 function_name=function_name,
-                param_names=param_names,
+                params=params,
                 return_type="list",
             ),
             connection_pool=asyncpg_connection_pool_to_test_db,
         )
 
-    assert error.value.actual_param_names == param_names
+    assert error.value.actual_params == params
     assert error.value.expected_param_names_count == expected_param_names
 
 
@@ -126,7 +133,7 @@ async def test_handle_response_schema_getter_error(
                 query_to_generate=QueryToGenerate(
                     query="select 1",
                     function_name=function_name,
-                    param_names=[],
+                    params=[],
                     return_type="list",
                 ),
                 connection_pool=asyncpg_connection_pool_to_test_db,
@@ -134,3 +141,40 @@ async def test_handle_response_schema_getter_error(
 
         assert mock.called
         assert error.value.error == schema_error
+
+
+async def test_generate_code_with_params_when_some_params_not_optional(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    code_quality_improver: CodeQualityImprover,
+) -> None:
+    function_name = "fetch_all_test"
+
+    code = await generate_query_python_code(
+        query_to_generate=QueryToGenerate(
+            query="select $1::integer as v1, $2::integer as v2",
+            function_name=function_name,
+            params=[
+                Parameter(name="param1", is_optional=True),
+                Parameter(name="param2", is_optional=False),
+            ],
+            return_type="list",
+        ),
+        connection_pool=asyncpg_connection_pool_to_test_db,
+    )
+
+    generated_module = types.ModuleType("generated_module")
+
+    exec(code, generated_module.__dict__)  # type: ignore[misc]
+
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        res = await generated_module.fetch_all_test(connection, param1=None, param2=2)  # type: ignore[misc]
+
+        assert res[0].v1 is None  # type: ignore[misc]
+        assert res[0].v2 == 2  # type: ignore[misc]
+
+    assert inspect.get_annotations(generated_module.fetch_all_test) == {  # type: ignore[misc]
+        "connection": asyncpg.connection.Connection,
+        "param1": int | None,
+        "param2": int,
+        "return": Sequence[generated_module.FetchAllTestModel],  # type: ignore [name-defined]
+    }

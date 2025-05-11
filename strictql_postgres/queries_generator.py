@@ -55,7 +55,7 @@ async def generate_queries(settings: StrictqlSettings) -> None:
                     query_to_generate=QueryToGenerate(
                         query=query_to_generate.query,
                         function_name=query_to_generate.function_name,
-                        param_names=query_to_generate.parameter_names,
+                        params=query_to_generate.parameter_names,
                         return_type=query_to_generate.return_type,
                     ),
                     connection_pool=pools[query_to_generate.database.name],
