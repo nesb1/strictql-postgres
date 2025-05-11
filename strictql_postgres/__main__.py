@@ -40,9 +40,16 @@ async def generate_from_config() -> None:
     settings = StrictqlSettings(
         queries_to_generate={
             pathlib.Path("select_kek.py"): QueryToGenerate(
-                query="select * from testdt where dt6 > $1;",
+                query="select * from testdt where dt1 = $1 and dt2 = $2 and dt3 = $3 and dt4 = $4 and dt5 = $5 and dt6 = $6;",
                 name="select from testdt",
-                parameter_names=[Parameter(name="param", is_optional=False)],
+                parameter_names=[
+                    Parameter(name="dt1", is_optional=False),
+                    Parameter(name="dt2", is_optional=False),
+                    Parameter(name="dt3", is_optional=True),
+                    Parameter(name="dt4", is_optional=False),
+                    Parameter(name="dt5", is_optional=False),
+                    Parameter(name="dt6", is_optional=True),
+                ],
                 database=db,
                 return_type="list",
                 function_name="select_dt",

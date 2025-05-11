@@ -4,6 +4,7 @@ from mako.template import (  # type: ignore[import-untyped] # mako has not typin
     Template,
 )
 
+from pglast import prettify
 from strictql_postgres.code_quality import (
     CodeQualityImprover,
     CodeQualityImproverError,
@@ -37,6 +38,7 @@ async def generate_code_for_query_with_fetch_all_method(
     function_name: StringInSnakeLowerCase,
     code_quality_improver: CodeQualityImprover,
 ) -> str:
+    query = prettify(query)
     model_type = ModelType(
         name=generate_model_name_by_function_name(function_name=function_name),
         fields=result_schema.schema,
@@ -101,6 +103,7 @@ async def generate_code_for_query_with_execute_method(
     function_name: StringInSnakeLowerCase,
     code_quality_improver: CodeQualityImprover,
 ) -> str:
+    query = prettify(query)
     rendered_code: str
     imports = {"from asyncpg import Connection"}
     if len(bind_params) == 0:

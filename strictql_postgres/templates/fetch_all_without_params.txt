@@ -7,5 +7,8 @@ ${model}
 % endfor
 
 async def ${function_name}(connection: Connection) -> Sequence[${model_name}]:
-    records = await connection.fetch("${query}")
+    query = """
+    ${query}
+"""
+    records = await connection.fetch(query)
     return convert_records_to_pydantic_models(records=records, pydantic_model_type=${model_name})
