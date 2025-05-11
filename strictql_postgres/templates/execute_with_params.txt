@@ -7,5 +7,8 @@ ${model}
 % endfor
 
 async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_str}" for param in params])}) -> str:
-    return await connection.execute("${query}", ${", ".join([param.name_in_function for param in params])})
+    query = """
+    ${query}
+"""
+    return await connection.execute(query, ${", ".join([param.name_in_function for param in params])})
 

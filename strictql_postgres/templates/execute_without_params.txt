@@ -3,4 +3,7 @@ ${import_}
 % endfor
 
 async def ${function_name}(connection: Connection) -> str:
-    return await connection.execute("${query}")
+    query = """
+    ${query}
+"""
+    return await connection.execute(query)

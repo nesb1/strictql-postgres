@@ -1,6 +1,7 @@
 import pathlib
 
 from asyncpg import Pool
+from pglast import prettify
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
@@ -29,7 +30,7 @@ async def test_code_generator_fetch_all_without_bind_params(
         "create table users (id serial not null, name text)"
     )
 
-    query = "SELECT * FROM users;"
+    query = prettify("SELECT * FROM users;")
 
     from tests.code_generator.expected_generated_code.fetch_all_without_bind_params import (
         fetch_all_users,
@@ -71,7 +72,7 @@ async def test_code_generator_pydantic_with_bind_params(
         "create table users (id serial not null, name text)"
     )
 
-    query = "SELECT * FROM users where id = $1 and name = $2;"
+    query = prettify("SELECT * FROM users where id = $1 and name = $2;")
 
     from tests.code_generator.expected_generated_code.fetch_all_with_bind_params import (
         fetch_all_users,

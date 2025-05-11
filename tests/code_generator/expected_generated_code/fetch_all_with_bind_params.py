@@ -14,9 +14,13 @@ class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any,misc]
 async def fetch_all_users(
     connection: Connection, id: int | None, name: str | None
 ) -> Sequence[FetchAllUsersModel]:
-    records = await connection.fetch(
-        "SELECT * FROM users where id = $1 and name = $2;", id, name
-    )
+    query = """
+    SELECT *
+FROM users
+WHERE id = $1
+  AND name = $2
+"""
+    records = await connection.fetch(query, id, name)
     return convert_records_to_pydantic_models(
         records=records, pydantic_model_type=FetchAllUsersModel
     )
