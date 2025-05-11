@@ -23,10 +23,15 @@ class DataBaseSettings(BaseModel):  # type: ignore[explicit-any,misc]
     connection_url: SecretStr
 
 
+class Parameter(BaseModel):  # type: ignore[explicit-any,misc]
+    name: str
+    is_optional: bool
+
+
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
     name: str
-    parameter_names: list[str]
+    parameter_names: list[Parameter]
     database: DataBaseSettings
     return_type: Literal["list"]
     function_name: str

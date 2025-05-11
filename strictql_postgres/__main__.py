@@ -4,11 +4,13 @@ import sys
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
-from cyclopts import App, Parameter
+from cyclopts import App
+from cyclopts import Parameter as CycloptsParameter
 from pydantic import SecretStr
 
 from strictql_postgres.config_manager import (
     DataBaseSettings,
+    Parameter,
     QueryToGenerate,
     StrictqlSettings,
 )
@@ -40,7 +42,7 @@ async def generate_from_config() -> None:
             pathlib.Path("select_kek.py"): QueryToGenerate(
                 query="select * from testdt where dt6 > $1;",
                 name="select from testdt",
-                parameter_names=["dt6"],
+                parameter_names=[Parameter(name="param", is_optional=False)],
                 database=db,
                 return_type="list",
                 function_name="select_dt",
@@ -64,7 +66,9 @@ async def generate(
     fetch_type: Literal["fetch_all", "execute", "fetch_row"] = "fetch_all",
     dry_run: Annotated[
         bool,
-        Parameter(negative="", help="Вывести результат в stdout, не создавать файлы"),
+        CycloptsParameter(
+            negative="", help="Вывести результат в stdout, не создавать файлы"
+        ),
     ] = False,
 ) -> None:
     """
