@@ -6,19 +6,14 @@ from typing import Annotated, Literal
 
 from cyclopts import App
 from cyclopts import Parameter as CycloptsParameter
-from pydantic import SecretStr
 
-from strictql_postgres.config_manager import (
-    DataBaseSettings,
-    Parameter,
-    QueryToGenerate,
-    StrictqlSettings,
+from strictql_postgres.config_reader import (
+    get_strictql_settings,
 )
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
 
 logger = logging.getLogger(__name__)
 
-TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 app = App()
 
@@ -31,33 +26,10 @@ async def generate_from_config() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    # resolve_strictql_settings_from_parsed_settings()
+    settings = get_strictql_settings(
+        pyproject_toml_path=pathlib.Path("pyproject.toml"),
+    )
 
-    db = DataBaseSettings(
-        name="db1",
-        connection_url=SecretStr("postgresql://postgres:password@localhost/postgres"),
-    )
-    settings = StrictqlSettings(
-        queries_to_generate={
-            pathlib.Path("select_kek.py"): QueryToGenerate(
-                query="select * from testdt where dt1 = $1 and dt2 = $2 and dt3 = $3 and dt4 = $4 and dt5 = $5 and dt6 = $6;",
-                name="select from testdt",
-                parameter_names=[
-                    Parameter(name="dt1", is_optional=False),
-                    Parameter(name="dt2", is_optional=False),
-                    Parameter(name="dt3", is_optional=True),
-                    Parameter(name="dt4", is_optional=False),
-                    Parameter(name="dt5", is_optional=False),
-                    Parameter(name="dt6", is_optional=True),
-                ],
-                database=db,
-                return_type="list",
-                function_name="select_dt",
-            ),
-        },
-        databases={"db1": db},
-        generated_code_path=pathlib.Path("strictql_postgres/generated_code"),
-    )
     try:
         await generate_queries(settings)
     except StrictqlGeneratorError as error:
