@@ -26,26 +26,24 @@ def parse_pyproject_toml_strictql_tool(path: Path) -> ParsedStrictqlSettings:
 
 
 class DataBaseSettings(BaseModel):  # type: ignore[explicit-any,misc]
-    name: str
     connection_url: SecretStr
 
 
 class Parameter(BaseModel):  # type: ignore[explicit-any,misc]
-    name: str
     is_optional: bool
 
 
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
-    name: str
-    parameter_names: list[Parameter]
-    database: DataBaseSettings
+    parameter_names: dict[str, Parameter]
+    database_name: str
+    database_connection_url: SecretStr
     return_type: Literal["list"]
     function_name: str
 
 
 class StrictqlSettings(BaseModel):  # type: ignore[explicit-any,misc]
-    queries_to_generate: dict[pathlib.Path, QueryToGenerate]
+    queries_to_generate: dict[pathlib.Path, list[QueryToGenerate]]
     databases: dict[str, DataBaseSettings]
     generated_code_path: pathlib.Path
 
@@ -152,15 +150,14 @@ def create_path_object_from_str(path_str: str) -> pathlib.Path:
         )
 
 
-def resolve_strictql_settings(
-        code_generation_directory: pathlib.Path,
-        parsed_query_files: list[]
-)
+def create_queries_to_generate(
+    parsed_query_files: list[ParsedQueryToGenerate],
+    databases: dict[str, ParsedDatabase],
+) -> dict[pathlib.Path, QueryToGenerate]:
+    pass
 
 
-def parse_strictql_settings(pyproject_toml_path: Path | None) -> StrictqlSettings:
-    if pyproject_toml_path is None:
-        pyproject_toml_path = pathlib.Path(os.getcwd()) / "pyproject.toml"
+def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
 
     parsed_toml_file = parse_toml_file(pyproject_toml_path)
 
