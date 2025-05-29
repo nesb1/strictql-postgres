@@ -1,17 +1,19 @@
 import dataclasses
 import os
 import pathlib
+from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
 import pydantic
+from pydantic import BaseModel, SecretStr
+from pydantic_core import ErrorDetails
 
 from strictql_postgres.format_exception import format_exception
-from strictql_postgres.toml_parser import parse_toml_file, TomlParserError
-from pydantic import BaseModel, SecretStr, Field, parse_obj_as, TypeAdapter
+from strictql_postgres.toml_parser import parse_toml_file
 
 
-class ParsedDatabase(pydantic.BaseModel):
+class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
     env_name_to_read_connection_url: str
 
 
@@ -19,10 +21,6 @@ class ParsedStrictqlSettings(BaseModel):  # type: ignore[explicit-any,misc]
     query_files_path: list[str]
     code_generate_dir: str
     databases: dict[str, ParsedDatabase]
-
-
-def parse_pyproject_toml_strictql_tool(path: Path) -> ParsedStrictqlSettings:
-    raise NotImplementedError()
 
 
 class DataBaseSettings(BaseModel):  # type: ignore[explicit-any,misc]
@@ -35,32 +33,31 @@ class Parameter(BaseModel):  # type: ignore[explicit-any,misc]
 
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
-    parameter_names: dict[str, Parameter]
+    parameters: dict[str, Parameter]
     database_name: str
     database_connection_url: SecretStr
     return_type: Literal["list"]
-    function_name: str
 
 
 class StrictqlSettings(BaseModel):  # type: ignore[explicit-any,misc]
-    queries_to_generate: dict[pathlib.Path, list[QueryToGenerate]]
+    queries_to_generate: dict[pathlib.Path, dict[str, QueryToGenerate]]
     databases: dict[str, DataBaseSettings]
     generated_code_path: pathlib.Path
 
 
-class ParsedParameter(BaseModel):
+class ParsedParameter(BaseModel):  # type: ignore[explicit-any,misc]
     is_optional: bool
 
 
-class ParsedQueryToGenerate(BaseModel):
+class ParsedQueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
-    parameter_names: dict[str, ParsedParameter]
+    parameter_names: dict[str, ParsedParameter] = {}
     database: str
     return_type: Literal["list"]
-    function_name: str
+    relative_path: pathlib.Path
 
 
-class QueryFile(BaseModel):
+class QueryFile(BaseModel):  # type: ignore[explicit-any,misc]
     queries: dict[str, ParsedQueryToGenerate]
 
 
@@ -74,17 +71,15 @@ def parse_query_file_content(
 ) -> dict[str, ParsedQueryToGenerate]:
     try:
         return QueryFile.model_validate(query_file_content).queries
-    except pydantic.ValidationError as error:
-        for error in error.errors():
-            if error["type"] == "missing":
+    except pydantic.ValidationError as validation_error:
+        error: ErrorDetails
+        for error in validation_error.errors():  # type: ignore[misc]
+            if error["type"] == "missing":  # type: ignore[misc]
                 raise QueryFileContentParserError(
-                    error=f"Missing required field: `{'.'.join([
-                    str(path_item)
-                    for path_item in error["loc"]
-                ])}`"
+                    error=f"Missing required field: `{'.'.join([str(path_item) for path_item in error['loc']])}`"  # type: ignore[misc]
                 )
             raise QueryFileContentParserError(
-                error=f'Error when validating section `{".".join(str(loc_part) for loc_part in error["loc"])}`, pydantic error: {error["msg"]}`'
+                error=f"Error when validating section `{'.'.join(str(loc_part) for loc_part in error['loc'])}`, pydantic error: {error['msg']}`"  # type: ignore[misc]
             )
 
     raise RuntimeError("It should not happen")
@@ -101,36 +96,33 @@ class ExtractStrictqlSettingsError(Exception):
     error: str
 
 
-class Tool(BaseModel):
+class Tool(BaseModel):  # type: ignore[explicit-any,misc]
     strictql_postgres: ParsedStrictqlSettings
 
 
-class PyprojectToml(BaseModel):
+class PyprojectToml(BaseModel):  # type: ignore[explicit-any,misc]
     tool: Tool
 
 
 def extract_strictql_settings_from_parsed_toml_file(
     pyproject_data: dict[str, object],
 ) -> ParsedStrictqlSettings:
-
-    try:
-        return PyprojectToml.model_validate(pyproject_data).tool.strictql_postgres
-    except pydantic.ValidationError as e:
-
-        for error in e.errors():
-            if error["type"] == "missing":
-                raise ExtractStrictqlSettingsError(
-                    error=f"Missing `{".".join(error['loc'])}` section in pyproject.toml"
-                )
-            if error["loc"] in (("tool",), ("tool", "strictql_postgres")):
-                raise ExtractStrictqlSettingsError(
-                    error=f'Error when validating section `{".".join(str(loc_part) for loc_part in error["loc"])}`, it must be valid toml table`'
-                )
-
-            raise ExtractStrictqlSettingsError(
-                error=f"{error['msg']} for option `{".".join(str(loc_part) for loc_part in error['loc'])}` in pyproject.toml"
-            )
-    raise RuntimeError("It should not happen")
+    return PyprojectToml.model_validate(pyproject_data).tool.strictql_postgres
+    # except pydantic.ValidationError as e:
+    #     for error in e.errors():  # type: ignore[misc]
+    #         if error["type"] == "missing":  # type: ignore[misc]
+    #             raise ExtractStrictqlSettingsError(
+    #                 error=f"Missing `{'.'.join(str(error['loc']))}` section in pyproject.toml"  # type: ignore[misc]
+    #             )
+    #         if error["loc"] in (("tool",), ("tool", "strictql_postgres")):  # type: ignore[misc]
+    #             raise ExtractStrictqlSettingsError(
+    #                 error=f"Error when validating section `{'.'.join(str(loc_part) for loc_part in error['loc'])}`, it must be valid toml table`"  # type: ignore[misc]
+    #             )
+    #
+    #         raise ExtractStrictqlSettingsError(
+    #             error=f"{error['msg']} for option `{'.'.join(str(loc_part) for loc_part in error['loc'])}` in pyproject.toml"  # type: ignore[misc]
+    #         )
+    # raise RuntimeError("It should not happen")
 
 
 @dataclasses.dataclass
@@ -139,26 +131,15 @@ class PathValidationError(Exception):
 
 
 def create_path_object_from_str(path_str: str) -> pathlib.Path:
-
     try:
         return pathlib.Path(path_str)
     except ValueError as error:
         raise PathValidationError(
-            error=f"Error when validating path: {format_exception(
-            exception=error,
-        )}"
+            error=f"Error when validating path: {format_exception(exception=error)}"
         )
 
 
-def create_queries_to_generate(
-    parsed_query_files: list[ParsedQueryToGenerate],
-    databases: dict[str, ParsedDatabase],
-) -> dict[pathlib.Path, QueryToGenerate]:
-    pass
-
-
 def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
-
     parsed_toml_file = parse_toml_file(pyproject_toml_path)
 
     parsed_strictql_settings = extract_strictql_settings_from_parsed_toml_file(
@@ -169,13 +150,9 @@ def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
         path_str=parsed_strictql_settings.code_generate_dir
     )
 
-    query_files_path = []
-
-    for query_file_path in parsed_strictql_settings.query_files_path:
-        query_files_path.append(create_path_object_from_str(path_str=query_file_path))
-
-    parsed_query_files = []
-    for query_file_path in query_files_path:
+    parsed_query_files: list[dict[str, ParsedQueryToGenerate]] = []
+    for query_file_path_str in parsed_strictql_settings.query_files_path:
+        query_file_path = pathlib.Path(query_file_path_str)
         parsed_toml_file = parse_toml_file(path=query_file_path)
         parsed_query_files.append(
             parse_query_file_content(query_file_content=parsed_toml_file)
@@ -183,4 +160,36 @@ def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
 
     # validate paths
     # parse query files
-    pass
+
+    queries_to_generate: dict[pathlib.Path, dict[str, QueryToGenerate]] = defaultdict(
+        dict
+    )
+
+    databases = {}
+    for database_name, database in parsed_strictql_settings.databases.items():
+        databases[database_name] = DataBaseSettings(
+            connection_url=SecretStr(
+                os.environ[database.env_name_to_read_connection_url]
+            )
+        )
+
+    for queries_it_query_file in parsed_query_files:
+        for query_name, query in queries_it_query_file.items():
+            queries_to_generate[code_generation_dir / query.relative_path][
+                query_name
+            ] = QueryToGenerate(
+                query=query.query,
+                parameters={
+                    parameter_name: Parameter(is_optional=parameter.is_optional)
+                    for parameter_name, parameter in query.parameter_names.items()
+                },
+                database_name=query.database,
+                database_connection_url=databases[query.database].connection_url,
+                return_type=query.return_type,
+            )
+
+    return StrictqlSettings(
+        queries_to_generate=queries_to_generate,
+        databases=databases,
+        generated_code_path=code_generation_dir,
+    )

@@ -83,7 +83,7 @@ async def test_generate_code_and_execute_for_simple_types_in_response_model(
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query=query,
-            params=[],
+            params={},
             return_type="list",
             function_name=function_name,
         ),
@@ -183,7 +183,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
         query_to_generate=QueryToGenerate(
             query=query,
             function_name=function_name,
-            params=[],
+            params={},
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,

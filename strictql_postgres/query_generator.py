@@ -52,7 +52,7 @@ class InvalidSqlQuery(QueryPythonCodeGeneratorError):
 class InvalidParamNames(QueryPythonCodeGeneratorError):
     query: str
     expected_param_names_count: int
-    actual_params: list[Parameter]
+    actual_params: dict[str, Parameter]
 
     def __str__(self) -> str:
         return f"""{{
@@ -65,7 +65,7 @@ actual_param_names: {self.actual_params}
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
     function_name: str
-    params: list[Parameter]
+    params: dict[str, Parameter]
     return_type: Literal["list", "execute"]
 
 
@@ -99,13 +99,13 @@ async def generate_query_python_code(
             )
         params = []
         if query_to_generate.params:
-            for parameter_from_pg, user_parameter in zip(
-                pg_param_types, query_to_generate.params
+            for parameter_from_pg, (user_parameter_name, user_parameter) in zip(
+                pg_param_types, query_to_generate.params.items()
             ):
                 parameter_from_pg.is_optional = user_parameter.is_optional
                 params.append(
                     BindParam(
-                        name_in_function=user_parameter.name,
+                        name_in_function=user_parameter_name,
                         type_=parameter_from_pg,
                     )
                 )

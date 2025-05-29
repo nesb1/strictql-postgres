@@ -34,7 +34,7 @@ async def test_query_invalid(
             query_to_generate=QueryToGenerate(
                 query=query,
                 function_name=function_name,
-                params=[],
+                params={},
                 return_type="list",
             ),
             connection_pool=asyncpg_connection_pool_to_test_db,
@@ -54,10 +54,10 @@ async def test_param_names_equals_query_bind_params(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
             function_name=function_name,
-            params=[
-                Parameter(name="param1", is_optional=True),
-                Parameter(name="param2", is_optional=True),
-            ],
+            params={
+                "param1": Parameter(is_optional=True),
+                "param2": Parameter(is_optional=True),
+            },
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
@@ -99,9 +99,7 @@ async def test_param_names_not_equals_query_bind_params(
     function_name = "fetch_all_test"
 
     with pytest.raises(InvalidParamNames) as error:
-        params = [
-            Parameter(name=parm_name, is_optional=True) for parm_name in param_names
-        ]
+        params = {parm_name: Parameter(is_optional=True) for parm_name in param_names}
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
@@ -133,7 +131,7 @@ async def test_handle_response_schema_getter_error(
                 query_to_generate=QueryToGenerate(
                     query="select 1",
                     function_name=function_name,
-                    params=[],
+                    params={},
                     return_type="list",
                 ),
                 connection_pool=asyncpg_connection_pool_to_test_db,
@@ -153,10 +151,10 @@ async def test_generate_code_with_params_when_some_params_not_optional(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
             function_name=function_name,
-            params=[
-                Parameter(name="param1", is_optional=True),
-                Parameter(name="param2", is_optional=False),
-            ],
+            params={
+                "param1": Parameter(is_optional=True),
+                "param2": Parameter(is_optional=False),
+            },
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
