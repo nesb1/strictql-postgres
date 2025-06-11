@@ -4,17 +4,21 @@ import tempfile
 from contextlib import contextmanager
 from typing import Iterator
 
+import pytest
 from pydantic import SecretStr
 
-from strictql_postgres.config_manager import (
-    DataBaseSettings,
-    Parameter,
+from strictql_postgres.config_reader import (
     ParsedDatabase,
     ParsedStrictqlSettings,
-    QueryToGenerate,
-    StrictqlSettings,
     extract_strictql_settings_from_parsed_toml_file,
     get_strictql_settings,
+    StrictqlSettingsLoadError,
+)
+from strictql_postgres.queries_to_generate import (
+    DataBaseSettings,
+    Parameter,
+    QueryToGenerate,
+    StrictQLQuiriesToGenerate,
 )
 
 
@@ -333,7 +337,7 @@ relative_path = "orders.py"
                 pyproject_toml_path=pyproject_toml_path
             )
 
-    expected_settings = StrictqlSettings(
+    expected_settings = StrictQLQuiriesToGenerate(
         queries_to_generate={
             generated_query_users_path: {
                 "get_user_by_id": QueryToGenerate(
@@ -373,10 +377,3 @@ relative_path = "orders.py"
     )
 
     assert expected_settings == actual_settings
-
-
-"""
-негативные сценарии:
-- в одном файле есть запросы с одинаковым названием функции
-- 
-"""

@@ -7,14 +7,13 @@ from typing import Annotated, Literal
 from cyclopts import App
 from cyclopts import Parameter as CycloptsParameter
 
-from strictql_postgres.config_manager import (
+from strictql_postgres.config_reader import (
     get_strictql_settings,
 )
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
 
 logger = logging.getLogger(__name__)
 
-TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 app = App()
 
@@ -27,7 +26,6 @@ async def generate_from_config() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    # resolve_strictql_settings_from_parsed_settings()
     settings = get_strictql_settings(
         pyproject_toml_path=pathlib.Path("pyproject.toml"),
     )

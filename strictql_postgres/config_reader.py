@@ -10,7 +10,18 @@ from pydantic import BaseModel, SecretStr
 from pydantic_core import ErrorDetails
 
 from strictql_postgres.format_exception import format_exception
+from strictql_postgres.queries_to_generate import (
+    DataBaseSettings,
+    Parameter,
+    QueryToGenerate,
+    StrictQLQuiriesToGenerate,
+)
 from strictql_postgres.toml_parser import parse_toml_file
+
+
+@dataclasses.dataclass()
+class StrictqlSettingsLoadError(Exception):
+    error: str
 
 
 class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
@@ -21,28 +32,6 @@ class ParsedStrictqlSettings(BaseModel):  # type: ignore[explicit-any,misc]
     query_files_path: list[str]
     code_generate_dir: str
     databases: dict[str, ParsedDatabase]
-
-
-class DataBaseSettings(BaseModel):  # type: ignore[explicit-any,misc]
-    connection_url: SecretStr
-
-
-class Parameter(BaseModel):  # type: ignore[explicit-any,misc]
-    is_optional: bool
-
-
-class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
-    query: str
-    parameters: dict[str, Parameter]
-    database_name: str
-    database_connection_url: SecretStr
-    return_type: Literal["list"]
-
-
-class StrictqlSettings(BaseModel):  # type: ignore[explicit-any,misc]
-    queries_to_generate: dict[pathlib.Path, dict[str, QueryToGenerate]]
-    databases: dict[str, DataBaseSettings]
-    generated_code_path: pathlib.Path
 
 
 class ParsedParameter(BaseModel):  # type: ignore[explicit-any,misc]
@@ -87,7 +76,7 @@ def parse_query_file_content(
 
 def resolve_strictql_settings_from_parsed_settings(
     parsed_settings: ParsedStrictqlSettings,
-) -> StrictqlSettings:
+) -> StrictQLQuiriesToGenerate:
     raise NotImplementedError()
 
 
@@ -139,7 +128,7 @@ def create_path_object_from_str(path_str: str) -> pathlib.Path:
         )
 
 
-def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
+def get_strictql_settings(pyproject_toml_path: Path) -> StrictQLQuiriesToGenerate:
     parsed_toml_file = parse_toml_file(pyproject_toml_path)
 
     parsed_strictql_settings = extract_strictql_settings_from_parsed_toml_file(
@@ -157,9 +146,6 @@ def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
         parsed_query_files.append(
             parse_query_file_content(query_file_content=parsed_toml_file)
         )
-
-    # validate paths
-    # parse query files
 
     queries_to_generate: dict[pathlib.Path, dict[str, QueryToGenerate]] = defaultdict(
         dict
@@ -188,7 +174,7 @@ def get_strictql_settings(pyproject_toml_path: Path) -> StrictqlSettings:
                 return_type=query.return_type,
             )
 
-    return StrictqlSettings(
+    return StrictQLQuiriesToGenerate(
         queries_to_generate=queries_to_generate,
         databases=databases,
         generated_code_path=code_generation_dir,

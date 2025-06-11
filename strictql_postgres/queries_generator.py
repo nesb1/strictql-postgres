@@ -6,7 +6,7 @@ from typing import AsyncIterator
 from pydantic import SecretStr
 
 import asyncpg
-from strictql_postgres.config_manager import StrictqlSettings
+from strictql_postgres.queries_to_generate import StrictQLQuiriesToGenerate
 from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
@@ -39,7 +39,7 @@ async def _create_pools(
             await pool.__aexit__(None, None, None)
 
 
-async def generate_queries(settings: StrictqlSettings) -> None:
+async def generate_queries(settings: StrictQLQuiriesToGenerate) -> None:
     dbs_connection_urls = {
         database_name: database.connection_url
         for database_name, database in settings.databases.items()

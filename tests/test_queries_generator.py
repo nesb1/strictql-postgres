@@ -3,10 +3,10 @@ from tempfile import TemporaryDirectory
 
 from pydantic import SecretStr
 
-from strictql_postgres.config_manager import (
+from strictql_postgres.queries_to_generate import (
     DataBaseSettings,
     QueryToGenerate,
-    StrictqlSettings,
+    StrictQLQuiriesToGenerate,
 )
 from strictql_postgres.queries_generator import (
     generate_queries,
@@ -20,7 +20,7 @@ async def test_strictql_generator_works() -> None:
             "postgresql://postgres:password@localhost/postgres"
         )
         await generate_queries(
-            settings=StrictqlSettings(
+            settings=StrictQLQuiriesToGenerate(
                 queries_to_generate={
                     pathlib.Path("query1.py"): {
                         "query": QueryToGenerate(
@@ -58,7 +58,7 @@ async def test_strictql_generator_supports_subdirectories() -> None:
         generated_code_dir_path = pathlib.Path(tmpdir)
         relative_path = pathlib.Path("subdir") / "subdir" / "file.py"
         await generate_queries(
-            settings=StrictqlSettings(
+            settings=StrictQLQuiriesToGenerate(
                 queries_to_generate={
                     relative_path: {
                         "query": QueryToGenerate(
@@ -84,7 +84,7 @@ async def test_strictql_generator_works_recreate_generated_code_dir() -> None:
         generated_code_dir_path = pathlib.Path(tmpdir)
         (generated_code_dir_path / "file.py").touch()
         await generate_queries(
-            settings=StrictqlSettings(
+            settings=StrictQLQuiriesToGenerate(
                 queries_to_generate={
                     pathlib.Path("query1.py"): {
                         "query": QueryToGenerate(
