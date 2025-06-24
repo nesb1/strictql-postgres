@@ -3,13 +3,13 @@ from tempfile import TemporaryDirectory
 
 from pydantic import SecretStr
 
+from strictql_postgres.queries_generator import (
+    generate_queries,
+)
 from strictql_postgres.queries_to_generate import (
     DataBaseSettings,
     QueryToGenerate,
-    StrictQLQuiriesToGenerate,
-)
-from strictql_postgres.queries_generator import (
-    generate_queries,
+    StrictQLQueriesToGenerate,
 )
 
 
@@ -20,26 +20,24 @@ async def test_strictql_generator_works() -> None:
             "postgresql://postgres:password@localhost/postgres"
         )
         await generate_queries(
-            settings=StrictQLQuiriesToGenerate(
+            queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    pathlib.Path("query1.py"): {
-                        "query": QueryToGenerate(
-                            query="select 1 as value",
-                            parameters={},
-                            database_name="db",
-                            database_connection_url=db_connection_url,
-                            return_type="list",
-                        )
-                    },
-                    pathlib.Path("query2.py"): {
-                        "query": QueryToGenerate(
-                            query="select 2 as value",
-                            parameters={},
-                            database_name="db",
-                            database_connection_url=db_connection_url,
-                            return_type="list",
-                        )
-                    },
+                    pathlib.Path("query1.py"): QueryToGenerate(
+                        query="select 1 as value",
+                        parameters={},
+                        database_name="db",
+                        database_connection_url=db_connection_url,
+                        return_type="list",
+                        function_name="query",
+                    ),
+                    pathlib.Path("query2.py"): QueryToGenerate(
+                        query="select 2 as value",
+                        parameters={},
+                        database_name="db",
+                        database_connection_url=db_connection_url,
+                        return_type="list",
+                        function_name="query",
+                    ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
                 generated_code_path=generated_code_dir_path,
@@ -58,17 +56,16 @@ async def test_strictql_generator_supports_subdirectories() -> None:
         generated_code_dir_path = pathlib.Path(tmpdir)
         relative_path = pathlib.Path("subdir") / "subdir" / "file.py"
         await generate_queries(
-            settings=StrictQLQuiriesToGenerate(
+            queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    relative_path: {
-                        "query": QueryToGenerate(
-                            query="select 1 as value",
-                            parameters={},
-                            database_name="db",
-                            database_connection_url=db_connection_url,
-                            return_type="list",
-                        ),
-                    }
+                    relative_path: QueryToGenerate(
+                        query="select 1 as value",
+                        parameters={},
+                        database_name="db",
+                        database_connection_url=db_connection_url,
+                        return_type="list",
+                        function_name="query",
+                    ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
                 generated_code_path=generated_code_dir_path,
@@ -84,17 +81,16 @@ async def test_strictql_generator_works_recreate_generated_code_dir() -> None:
         generated_code_dir_path = pathlib.Path(tmpdir)
         (generated_code_dir_path / "file.py").touch()
         await generate_queries(
-            settings=StrictQLQuiriesToGenerate(
+            queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    pathlib.Path("query1.py"): {
-                        "query": QueryToGenerate(
-                            query="select 1 as value",
-                            parameters={},
-                            database_name="db",
-                            database_connection_url=db_connection_url,
-                            return_type="list",
-                        )
-                    },
+                    pathlib.Path("query1.py"): QueryToGenerate(
+                        query="select 1 as value",
+                        parameters={},
+                        database_name="db",
+                        database_connection_url=db_connection_url,
+                        return_type="list",
+                        function_name="query",
+                    ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
                 generated_code_path=generated_code_dir_path,

@@ -6,7 +6,7 @@ from typing import AsyncIterator
 from pydantic import SecretStr
 
 import asyncpg
-from strictql_postgres.queries_to_generate import StrictQLQuiriesToGenerate
+from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
 from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
@@ -39,38 +39,42 @@ async def _create_pools(
             await pool.__aexit__(None, None, None)
 
 
-async def generate_queries(settings: StrictQLQuiriesToGenerate) -> None:
+async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> None:
     dbs_connection_urls = {
         database_name: database.connection_url
-        for database_name, database in settings.databases.items()
+        for database_name, database in queries_to_generate.databases.items()
     }
     async with _create_pools(dbs_connection_urls) as pools:
         tasks = []
 
-        for file_path, queries_to_generate in settings.queries_to_generate.items():
-            for query_name, query_to_generate in queries_to_generate.items():
-                task = asyncio.create_task(
-                    generate_query_python_code(
-                        query_to_generate=QueryToGenerate(
-                            query=query_to_generate.query,
-                            function_name=query_name,
-                            params=query_to_generate.parameters,
-                            return_type=query_to_generate.return_type,
-                        ),
-                        connection_pool=pools[query_to_generate.database_name],
+        for (
+            file_path,
+            query_to_generate,
+        ) in queries_to_generate.queries_to_generate.items():
+            task = asyncio.create_task(
+                generate_query_python_code(
+                    query_to_generate=QueryToGenerate(
+                        query=query_to_generate.query,
+                        function_name=query_to_generate.function_name,
+                        params=query_to_generate.parameters,
+                        return_type=query_to_generate.return_type,
                     ),
-                    name=f"generate_code_for_query {query_name} to {file_path}",
-                )
+                    connection_pool=pools[query_to_generate.database_name],
+                ),
+                name=f"generate_code_for_query {query_to_generate.function_name} to {file_path}",
+            )
 
-                tasks.append(task)
+            tasks.append(task)
 
         results = await asyncio.gather(*tasks)
-        if settings.generated_code_path.exists():
-            shutil.rmtree(settings.generated_code_path)
-        settings.generated_code_path.mkdir(exist_ok=False)
+        if queries_to_generate.generated_code_path.exists():
+            shutil.rmtree(queries_to_generate.generated_code_path)
+        queries_to_generate.generated_code_path.mkdir(exist_ok=False)
 
-        for code, file_path in zip(results, settings.queries_to_generate.keys()):
+        for code, file_path in zip(
+            results, queries_to_generate.queries_to_generate.keys()
+        ):
             path = file_path
-            if path.parent != settings.generated_code_path:
-                path.parent.mkdir(parents=True)
+            if path.parent != queries_to_generate.generated_code_path:
+                path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(data=code)

@@ -1,18 +1,22 @@
 import dataclasses
 import pathlib
-from typing import Literal
+from collections import defaultdict
+from typing import Literal, Mapping
 
 import pydantic
+from pydantic import SecretStr
 
-from strictql_postgres.queries_to_generate import StrictQLQuiriesToGenerate
+from strictql_postgres.queries_to_generate import (
+    DataBaseSettings,
+    Parameter,
+    QueryToGenerate,
+    QueryToGenerateWithSourceInfo,
+    StrictQLQueriesToGenerate,
+)
 
 
-class PyprojectTomlModel(pydantic.BaseModel):
-    tools: dict[str, object]
-
-
-def parse_pyproject_toml(path: pathlib.Path) -> PyprojectTomlModel:
-    pass
+class PyprojectToolsModel(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    tool: dict[str, object]
 
 
 class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
@@ -23,12 +27,6 @@ class ParsedStrictqlSettings(pydantic.BaseModel):  # type: ignore[explicit-any,m
     query_files_path: list[str]
     code_generate_dir: str
     databases: dict[str, ParsedDatabase]
-
-
-def parse_strictql_settings_from_pyproject_toml(
-    parsed_pyproject_toml: PyprojectTomlModel,
-) -> ParsedStrictqlSettings:
-    pass
 
 
 class ParsedParameter(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
@@ -43,8 +41,8 @@ class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,mi
     relative_path: str
 
 
-def parse_query_file(path: pathlib.Path) -> ParsedQueryToGenerate:
-    pass
+class QueryFileContentModel(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    queries: dict[str, ParsedQueryToGenerate]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -60,28 +58,93 @@ class GetStrictQLQueriesToGenerateError(DataClassError):
 
 
 def get_strictql_queries_to_generate(
-    parsed_queries_to_generate: dict[pathlib.Path, list[ParsedQueryToGenerate]],
+    parsed_queries_to_generate_by_query_file_path: dict[
+        pathlib.Path, dict[str, ParsedQueryToGenerate]
+    ],
     code_generated_dir: str,
-    databases: dict[str, ParsedDatabase],
-    environment_variables: dict[str, str],
-) -> StrictQLQuiriesToGenerate:
-    unique_file_paths = set()
-    queries_to_generate = []
+    parsed_databases: dict[str, ParsedDatabase],
+    environment_variables: Mapping[str, str],
+) -> StrictQLQueriesToGenerate:
+    databases: dict[str, DataBaseSettings] = {}
+    for database_name, database_settings in parsed_databases.items():
+        if (
+            database_settings.env_name_to_read_connection_url
+            not in environment_variables
+        ):
+            raise GetStrictQLQueriesToGenerateError(
+                error=f"Environment variable `{database_settings.env_name_to_read_connection_url}` with connection url to database: `{database_name}` not set"
+            )
+
+        databases[database_name] = DataBaseSettings(
+            connection_url=SecretStr(
+                environment_variables[database_settings.env_name_to_read_connection_url]
+            )
+        )
+
+    code_generation_dir_path = pathlib.Path(code_generated_dir).resolve()
+
+    queries_to_generate_with_source_info_by_file_path: dict[
+        pathlib.Path, list[QueryToGenerateWithSourceInfo]
+    ] = defaultdict(list)
     for (
         query_file_path,
         parsed_queries_to_generate,
-    ) in parsed_queries_to_generate.items():
-        for query_to_generate in parsed_queries_to_generate:
+    ) in parsed_queries_to_generate_by_query_file_path.items():
+        for query_name, query_to_generate in parsed_queries_to_generate.items():
             for special_path_symbol in ["~", "..", "."]:
                 if special_path_symbol in str(query_to_generate.relative_path).split(
                     "/"
                 ):
                     raise GetStrictQLQueriesToGenerateError(
-                        error=f"Found special path symbol: `{special_path_symbol}` in a query to generate path: `{query_to_generate.relative_path}`, query_file: `{query_file_path}`"
+                        error=f"Found special path symbol: `{special_path_symbol}` in a query to generate path: `{query_to_generate.relative_path}`, query_file: `{code_generation_dir_path / query_file_path}`"
                     )
-            if query_to_generate.relative_path in unique_file_paths:
+            if query_to_generate.database not in databases:
                 raise GetStrictQLQueriesToGenerateError(
-                    error=f"Found not unique path for query generation, file_path: `{query_to_generate.relative_path}`"
+                    error=f"Database : `{query_to_generate.database}` in a query: `{query_file_path}::{query_name}` not exists in a strictql settings"
                 )
 
-        pass
+            queries_to_generate_with_source_info_by_file_path[
+                code_generation_dir_path / query_to_generate.relative_path
+            ].append(
+                QueryToGenerateWithSourceInfo(
+                    query_to_generate=QueryToGenerate(
+                        query=query_to_generate.query,
+                        function_name=query_name,
+                        parameters={
+                            key: Parameter(is_optional=value.is_optional)
+                            for key, value in query_to_generate.parameter_names.items()
+                        },
+                        return_type=query_to_generate.return_type,
+                        database_name=query_to_generate.database,
+                        database_connection_url=databases[
+                            query_to_generate.database
+                        ].connection_url,
+                    ),
+                    query_file_path=query_file_path,
+                    query_name=query_name,
+                )
+            )
+
+    queries_to_generate_by_target_path = {}
+    for (
+        query_to_generate_path,
+        queries_to_generate,
+    ) in queries_to_generate_with_source_info_by_file_path.items():
+        if len(queries_to_generate) != 1:
+            queries_identifiers = [
+                f"{query.query_file_path.resolve()}::{query.query_name}"
+                for query in queries_to_generate
+            ]
+            raise GetStrictQLQueriesToGenerateError(
+                error=f"Found multiple queries to generate with path: `{(code_generation_dir_path / query_to_generate_path).resolve()}`, queries: {queries_identifiers}"
+            )
+
+        queries_to_generate_by_target_path[query_to_generate_path] = (
+            queries_to_generate[0].query_to_generate
+        )
+
+    return StrictQLQueriesToGenerate(
+        queries_to_generate=queries_to_generate_by_target_path,
+        generated_code_path=pathlib.Path(code_generated_dir),
+        databases=databases,
+    )
