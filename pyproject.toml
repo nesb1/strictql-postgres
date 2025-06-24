@@ -51,7 +51,7 @@ log_level = "DEBUG"
 [tool.strictql_postgres]
 code_generate_dir = "strictql_postgres/stirctql_generated"
 query_files_path = [
-    "strictql-users.toml"
+    "strictql-kek.toml"
 ]
 [tool.strictql_postgres.databases]
 db = { env_name_to_read_connection_url = "DB_URL" }

@@ -12,7 +12,6 @@ from strictql_postgres.code_generator import (
 )
 from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
-from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.pg_bind_params_type_getter import get_bind_params_python_types
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaContainsColumnsWithInvalidNames,
@@ -21,6 +20,7 @@ from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaTypeNotSupported,
     get_pg_response_schema_from_prepared_statement,
 )
+from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}

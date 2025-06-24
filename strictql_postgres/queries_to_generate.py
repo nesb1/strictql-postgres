@@ -1,7 +1,6 @@
 import pathlib
 from typing import Literal
 
-import pydantic
 from pydantic import BaseModel, SecretStr
 
 
@@ -19,14 +18,16 @@ class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     database_name: str
     database_connection_url: SecretStr
     return_type: Literal["list"]
+    function_name: str
 
 
-class StrictQLQueriesToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class QueryToGenerateWithSourceInfo(BaseModel):  # type: ignore[explicit-any,misc]
+    query_to_generate: QueryToGenerate
+    query_file_path: pathlib.Path
+    query_name: str
+
+
+class StrictQLQueriesToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     queries_to_generate: dict[pathlib.Path, QueryToGenerate]
     databases: dict[str, DataBaseSettings]
-    generated_code_path: pathlib.Path
-
-
-class StrictQLQuiriesToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
-    queries_to_generate: dict[pathlib.Path, QueryToGenerate]
     generated_code_path: pathlib.Path

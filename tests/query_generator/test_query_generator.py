@@ -7,11 +7,11 @@ import pytest
 
 import asyncpg
 from strictql_postgres.code_quality import CodeQualityImprover
-from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaGetterError,
     PgResponseSchemaTypeNotSupported,
 )
+from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.query_generator import (
     InvalidParamNames,
     InvalidResponseSchemaError,
