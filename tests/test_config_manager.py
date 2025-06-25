@@ -1,14 +1,19 @@
 import pathlib
+import tempfile
 
+import pydantic
 import pytest
+import tomli_w
 from pydantic import SecretStr
 
-from strictql_postgres.new_config_manager import (
+from strictql_postgres.config_manager import (
     GetStrictQLQueriesToGenerateError,
     ParsedDatabase,
     ParsedParameter,
     ParsedQueryToGenerate,
+    ParseTomlFileAsModelError,
     get_strictql_queries_to_generate,
+    parse_toml_file_as_model,
 )
 from strictql_postgres.queries_to_generate import (
     DataBaseSettings,
@@ -277,3 +282,91 @@ def test_get_queries_to_generate_raises_error_if_database_connection_url_env_not
         error.value.error
         == "Environment variable `DB1` with connection url to database: `db1` not set"
     )
+
+
+def test_parse_toml_as_model_works() -> None:
+    with tempfile.NamedTemporaryFile(mode="r+") as file:
+
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+            a: int
+            b: str
+
+        expected_model = Model(a=1, b="test")
+        model_as_dict: dict[str, object] = expected_model.model_dump()
+        content = tomli_w.dumps(model_as_dict)
+
+        file.write(content)
+
+        file.seek(0)
+        actual_model = parse_toml_file_as_model(
+            path=pathlib.Path(file.name), model_type=Model
+        )
+        assert actual_model == expected_model
+
+
+def test_parse_toml_files_as_model_file_not_found() -> None:
+    class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+        a: int
+        b: str
+
+    with pytest.raises(ParseTomlFileAsModelError) as error:
+        path = pathlib.Path("not_found.toml").resolve()
+        parse_toml_file_as_model(path=path, model_type=Model)
+
+    assert error.value.error == f"File `{path}` not found"
+
+
+def test_parse_toml_files_as_model_is_not_a_file() -> None:
+    class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+        a: int
+        b: str
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = pathlib.Path(tmpdir).resolve()
+
+        with pytest.raises(ParseTomlFileAsModelError) as error:
+            parse_toml_file_as_model(path=path, model_type=Model)
+
+    assert error.value.error == f"`{path}` is not a file"
+
+
+def test_parse_toml_as_model_not_valid_toml() -> None:
+    with tempfile.NamedTemporaryFile(mode="r+") as file:
+
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+            a: int
+            b: str
+
+        file.write("invalid toml content")
+
+        file.seek(0)
+
+        with pytest.raises(ParseTomlFileAsModelError) as error:
+            path = pathlib.Path(file.name).resolve()
+            parse_toml_file_as_model(path=path, model_type=Model)
+
+        assert error.value.error == f"Toml decode error occurred when parsing `{path}`"
+
+
+def test_parse_toml_as_model_not_valid_model() -> None:
+    with tempfile.NamedTemporaryFile(mode="r+") as file:
+
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+            a: int
+            b: str
+
+        dict_: dict[str, object] = {"another": "object"}
+        content = tomli_w.dumps(dict_)
+
+        file.write(content)
+
+        file.seek(0)
+
+        with pytest.raises(ParseTomlFileAsModelError) as error:
+            path = pathlib.Path(file.name).resolve()
+            parse_toml_file_as_model(path=path, model_type=Model)
+
+        assert (
+            error.value.error
+            == f"Error when parsing decoded toml dict from file `{path}`"
+        )
