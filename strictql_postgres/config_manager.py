@@ -1,10 +1,11 @@
 import dataclasses
 import pathlib
 from collections import defaultdict
-from typing import Literal, Mapping
+from typing import Literal, Mapping, TypeVar
 
 import pydantic
-from pydantic import SecretStr
+import tomllib
+from pydantic import BaseModel, SecretStr
 
 from strictql_postgres.queries_to_generate import (
     DataBaseSettings,
@@ -13,10 +14,6 @@ from strictql_postgres.queries_to_generate import (
     QueryToGenerateWithSourceInfo,
     StrictQLQueriesToGenerate,
 )
-
-
-class PyprojectToolsModel(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
-    tool: dict[str, object]
 
 
 class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
@@ -45,6 +42,14 @@ class QueryFileContentModel(pydantic.BaseModel):  # type: ignore[explicit-any,mi
     queries: dict[str, ParsedQueryToGenerate]
 
 
+class PyprojectTomlWithStrictQLToolSettings(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    strictql_postgres: ParsedStrictqlSettings
+
+
+class ParsedPyprojectTomlWithStrictQLSection(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    tool: PyprojectTomlWithStrictQLToolSettings
+
+
 @dataclasses.dataclass(frozen=True)
 class DataClassError(Exception):
     error: str
@@ -55,6 +60,36 @@ class DataClassError(Exception):
 
 class GetStrictQLQueriesToGenerateError(DataClassError):
     pass
+
+
+T = TypeVar("T", bound=BaseModel)
+
+
+@dataclasses.dataclass(frozen=True)
+class ParseTomlFileAsModelError(Exception):
+    error: str
+
+
+def parse_toml_file_as_model(path: pathlib.Path, model_type: type[T]) -> T:
+    if not path.exists():
+        raise ParseTomlFileAsModelError(error=f"File `{path.resolve()}` not found")
+    if not path.is_file():
+        raise ParseTomlFileAsModelError(error=f"`{path.resolve()}` is not a file")
+
+    file_content = path.read_text()
+    try:
+        parsed_toml: dict[str, object] = tomllib.loads(file_content)
+    except tomllib.TOMLDecodeError as error:
+        raise ParseTomlFileAsModelError(
+            error=f"Toml decode error occurred when parsing `{path}`"
+        ) from error
+
+    try:
+        return model_type.model_validate(parsed_toml)
+    except pydantic.ValidationError as error:
+        raise ParseTomlFileAsModelError(
+            error=f"Error when parsing decoded toml dict from file `{path}`"
+        ) from error
 
 
 def get_strictql_queries_to_generate(

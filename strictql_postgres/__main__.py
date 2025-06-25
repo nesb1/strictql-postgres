@@ -5,15 +5,16 @@ import sys
 from dataclasses import dataclass
 from typing import Annotated, Literal
 
-import tomllib
 from cyclopts import App
 from cyclopts import Parameter as CycloptsParameter
 
-from strictql_postgres.new_config_manager import (
-    ParsedStrictqlSettings,
-    PyprojectToolsModel,
+from strictql_postgres.config_manager import (
+    GetStrictQLQueriesToGenerateError,
+    ParsedPyprojectTomlWithStrictQLSection,
+    ParseTomlFileAsModelError,
     QueryFileContentModel,
     get_strictql_queries_to_generate,
+    parse_toml_file_as_model,
 )
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
 
@@ -31,41 +32,46 @@ async def generate_from_config() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    pyproject_toml_text = pathlib.Path("pyproject.toml").resolve().read_text()
-    pyproject_toml_data_as_dict: dict[str, object] = tomllib.loads(pyproject_toml_text)
-    parsed_pyproject_tools = PyprojectToolsModel.model_validate(
-        pyproject_toml_data_as_dict
-    )
-    if "strictql_postgres" not in parsed_pyproject_tools.tool:
-        raise Exception("strictql postgres not exists in pyproject.toml tools section")
+    pyproject_toml_path = pathlib.Path("pyproject.toml").resolve()
 
-    parsed_strictql_settings = ParsedStrictqlSettings.model_validate(
-        parsed_pyproject_tools.tool["strictql_postgres"]
-    )
+    try:
+        parsed_pyproject_file_with_strictql_settings = parse_toml_file_as_model(
+            path=pyproject_toml_path, model_type=ParsedPyprojectTomlWithStrictQLSection
+        )
+    except ParseTomlFileAsModelError:
+        logger.exception(f"Error occurred while parsing {pyproject_toml_path} file")
+        exit(1)
 
+    parsed_strictql_settings = (
+        parsed_pyproject_file_with_strictql_settings.tool.strictql_postgres
+    )
     parsed_query_files = {}
     for query_file in parsed_strictql_settings.query_files_path:
-        query_file_path = pathlib.Path(query_file)
-        if not query_file_path.exists():
-            raise Exception(f"Query file not found: {query_file_path}")
+        query_file_path = pathlib.Path(query_file).resolve()
 
-        query_file_content = query_file_path.read_text()
-        query_file_content_as_dict: dict[str, object] = tomllib.loads(
-            query_file_content
-        )
-
-        parsed_query_file_content = QueryFileContentModel.model_validate(
-            query_file_content_as_dict
-        )
+        try:
+            parsed_query_file_content = parse_toml_file_as_model(
+                path=query_file_path, model_type=QueryFileContentModel
+            )
+        except ParseTomlFileAsModelError:
+            logger.exception(
+                f"Error occurred while parsing query file: `{query_file_path}`"
+            )
+            sys.exit(1)
 
         parsed_query_files[query_file_path] = parsed_query_file_content.queries
-
-    queries_to_generate = get_strictql_queries_to_generate(
-        parsed_queries_to_generate_by_query_file_path=parsed_query_files,
-        code_generated_dir=parsed_strictql_settings.code_generate_dir,
-        parsed_databases=parsed_strictql_settings.databases,
-        environment_variables=os.environ,
-    )
+    try:
+        queries_to_generate = get_strictql_queries_to_generate(
+            parsed_queries_to_generate_by_query_file_path=parsed_query_files,
+            code_generated_dir=parsed_strictql_settings.code_generate_dir,
+            parsed_databases=parsed_strictql_settings.databases,
+            environment_variables=os.environ,
+        )
+    except GetStrictQLQueriesToGenerateError:
+        logger.exception(
+            "Error occurred while collecting quiries to generate from parsed configs"
+        )
+        sys.exit(1)
 
     try:
         await generate_queries(queries_to_generate)

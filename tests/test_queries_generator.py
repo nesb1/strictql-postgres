@@ -22,7 +22,8 @@ async def test_strictql_generator_works() -> None:
         await generate_queries(
             queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    pathlib.Path("query1.py"): QueryToGenerate(
+                    generated_code_dir_path
+                    / pathlib.Path("query1.py"): QueryToGenerate(
                         query="select 1 as value",
                         parameters={},
                         database_name="db",
@@ -30,7 +31,8 @@ async def test_strictql_generator_works() -> None:
                         return_type="list",
                         function_name="query",
                     ),
-                    pathlib.Path("query2.py"): QueryToGenerate(
+                    generated_code_dir_path
+                    / pathlib.Path("query2.py"): QueryToGenerate(
                         query="select 2 as value",
                         parameters={},
                         database_name="db",
@@ -58,7 +60,7 @@ async def test_strictql_generator_supports_subdirectories() -> None:
         await generate_queries(
             queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    relative_path: QueryToGenerate(
+                    generated_code_dir_path / relative_path: QueryToGenerate(
                         query="select 1 as value",
                         parameters={},
                         database_name="db",
@@ -83,7 +85,8 @@ async def test_strictql_generator_works_recreate_generated_code_dir() -> None:
         await generate_queries(
             queries_to_generate=StrictQLQueriesToGenerate(
                 queries_to_generate={
-                    pathlib.Path("query1.py"): QueryToGenerate(
+                    generated_code_dir_path
+                    / pathlib.Path("query1.py"): QueryToGenerate(
                         query="select 1 as value",
                         parameters={},
                         database_name="db",
