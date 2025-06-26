@@ -72,11 +72,10 @@ async def generate_from_config() -> None:
             "Error occurred while collecting quiries to generate from parsed configs"
         )
         sys.exit(1)
-
     try:
         await generate_queries(queries_to_generate)
     except StrictqlGeneratorError as error:
-        logger.error(error)
+        logger.error(error.error)
         sys.exit(1)
 
 

@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import shutil
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -6,15 +7,19 @@ from typing import AsyncIterator
 from pydantic import SecretStr
 
 import asyncpg
+from strictql_postgres.meta_file import generate_meta_file
 from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
 from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
 )
 
+STRICTQL_META_FILE_NAME = "strictql_meta.json"
 
+
+@dataclasses.dataclass
 class StrictqlGeneratorError(Exception):
-    pass
+    error: str
 
 
 @asynccontextmanager
@@ -40,6 +45,26 @@ async def _create_pools(
 
 
 async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> None:
+    if queries_to_generate.generated_code_path.exists():
+        meta_file_content_path = (
+            queries_to_generate.generated_code_path / STRICTQL_META_FILE_NAME
+        )
+        if not meta_file_content_path.exists():
+            raise StrictqlGeneratorError(
+                error=f"Generated code directory: `{queries_to_generate.generated_code_path.resolve()}` already exists and does not contain a meta file {STRICTQL_META_FILE_NAME}."
+                f" You probably specified the wrong directory or deleted the meta file. If you deleted the meta file yourself, then you need to manually delete the directory and regenerate the code."
+            )
+        meta_file_content = meta_file_content_path.read_text()
+        expected_meta_file = generate_meta_file(
+            path=queries_to_generate.generated_code_path,
+            meta_file_name=STRICTQL_META_FILE_NAME,
+        )
+        if expected_meta_file.model_dump_json() != meta_file_content:
+            raise StrictqlGeneratorError(
+                error=f"Generated code directory: `{queries_to_generate.generated_code_path.resolve()}` already exists and generated files in it are not equals to meta file content {STRICTQL_META_FILE_NAME}, looks like generated has been changed manually."
+                f" Delete the generated code directory and regenerate the code."
+            )
+
     dbs_connection_urls = {
         database_name: database.connection_url
         for database_name, database in queries_to_generate.databases.items()
@@ -67,14 +92,37 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
             tasks.append(task)
 
         results = await asyncio.gather(*tasks)
-        if queries_to_generate.generated_code_path.exists():
-            shutil.rmtree(queries_to_generate.generated_code_path)
-        queries_to_generate.generated_code_path.mkdir(exist_ok=False)
+
+        queries_to_generate.generated_code_path.mkdir(exist_ok=True)
+        temp_dir_path = (
+            queries_to_generate.generated_code_path.parent / "generated_code_path_new"
+        )
+        temp_dir_path.mkdir()
 
         for code, file_path in zip(
             results, queries_to_generate.queries_to_generate.keys()
         ):
-            path = file_path
+            relative_path = file_path.resolve().relative_to(
+                queries_to_generate.generated_code_path.resolve()
+            )
+            path = temp_dir_path / relative_path
             if path.parent != queries_to_generate.generated_code_path:
                 path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(data=code)
+
+        new_meta_file_content = generate_meta_file(
+            path=temp_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
+        )
+
+        (temp_dir_path / STRICTQL_META_FILE_NAME).write_text(
+            new_meta_file_content.model_dump_json()
+        )
+        old_path = (
+            queries_to_generate.generated_code_path.parent / "generated_code_path_old"
+        )
+        shutil.move(
+            queries_to_generate.generated_code_path,
+            old_path,
+        )
+        temp_dir_path.rename(queries_to_generate.generated_code_path)
+        shutil.rmtree(old_path)
