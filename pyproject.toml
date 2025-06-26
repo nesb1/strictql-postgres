@@ -50,7 +50,7 @@ asyncio_mode = "auto"
 log_level = "DEBUG"
 
 [tool.strictql_postgres]
-code_generate_dir = "strictql_postgres/stirctql_generated"
+code_generate_dir = "strictql_postgres/strictql_generated"
 query_files_path = [
     "strictql-kek.toml"
 ]
