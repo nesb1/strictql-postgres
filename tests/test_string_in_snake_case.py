@@ -2,7 +2,7 @@ import pytest
 
 from strictql_postgres.string_in_snake_case import (
     StringInSnakeLowerCase,
-    StringNotInSnakeCase,
+    StringNotInLowerSnakeCase,
 )
 
 
@@ -29,5 +29,5 @@ def test_string_in_snake_case_valid(value: str) -> None:
     ],
 )
 def test_string_in_snake_case_not_valid(value: str) -> None:
-    with pytest.raises(StringNotInSnakeCase):
+    with pytest.raises(StringNotInLowerSnakeCase):
         StringInSnakeLowerCase(value=value)

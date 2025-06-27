@@ -14,6 +14,10 @@ from strictql_postgres.queries_to_generate import (
     QueryToGenerateWithSourceInfo,
     StrictQLQueriesToGenerate,
 )
+from strictql_postgres.string_in_snake_case import (
+    StringInSnakeLowerCase,
+    StringNotInLowerSnakeCase,
+)
 
 
 class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
@@ -137,6 +141,12 @@ def get_strictql_queries_to_generate(
                 raise GetStrictQLQueriesToGenerateError(
                     error=f"Database : `{query_to_generate.database}` in a query: `{query_file_path}::{query_name}` not exists in a strictql settings"
                 )
+            try:
+                function_name = StringInSnakeLowerCase(value=query_name)
+            except StringNotInLowerSnakeCase as error:
+                raise GetStrictQLQueriesToGenerateError(
+                    error=f"Query name not in lower case snake string, query identifier: `{query_file_path.resolve()}::{query_name}`"
+                ) from error
 
             queries_to_generate_with_source_info_by_file_path[
                 code_generation_dir_path / query_to_generate.relative_path
@@ -144,7 +154,7 @@ def get_strictql_queries_to_generate(
                 QueryToGenerateWithSourceInfo(
                     query_to_generate=QueryToGenerate(
                         query=query_to_generate.query,
-                        function_name=query_name,
+                        function_name=function_name,
                         parameters={
                             key: Parameter(is_optional=value.is_optional)
                             for key, value in query_to_generate.parameter_names.items()
