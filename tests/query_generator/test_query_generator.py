@@ -19,6 +19,7 @@ from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 
 @pytest.mark.parametrize("query", ["sselect 1", "invalid_query"])
@@ -33,7 +34,7 @@ async def test_query_invalid(
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
-                function_name=function_name,
+                function_name=StringInSnakeLowerCase(function_name),
                 params={},
                 return_type="list",
             ),
@@ -53,7 +54,7 @@ async def test_param_names_equals_query_bind_params(
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
-            function_name=function_name,
+            function_name=StringInSnakeLowerCase(function_name),
             params={
                 "param1": Parameter(is_optional=True),
                 "param2": Parameter(is_optional=True),
@@ -103,7 +104,7 @@ async def test_param_names_not_equals_query_bind_params(
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
-                function_name=function_name,
+                function_name=StringInSnakeLowerCase(function_name),
                 params=params,
                 return_type="list",
             ),
@@ -130,7 +131,7 @@ async def test_handle_response_schema_getter_error(
             await generate_query_python_code(
                 query_to_generate=QueryToGenerate(
                     query="select 1",
-                    function_name=function_name,
+                    function_name=StringInSnakeLowerCase(function_name),
                     params={},
                     return_type="list",
                 ),
@@ -150,7 +151,7 @@ async def test_generate_code_with_params_when_some_params_not_optional(
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
-            function_name=function_name,
+            function_name=StringInSnakeLowerCase(function_name),
             params={
                 "param1": Parameter(is_optional=True),
                 "param2": Parameter(is_optional=False),

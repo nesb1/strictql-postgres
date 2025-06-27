@@ -64,7 +64,7 @@ actual_param_names: {self.actual_params}
 
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
-    function_name: str
+    function_name: StringInSnakeLowerCase
     params: dict[str, Parameter]
     return_type: Literal["list", "execute"]
 
@@ -116,14 +116,14 @@ async def generate_query_python_code(
                 query=query_to_generate.query,
                 result_schema=NotEmptyRowSchema(schema=schema),
                 bind_params=params,
-                function_name=StringInSnakeLowerCase(query_to_generate.function_name),
+                function_name=query_to_generate.function_name,
                 code_quality_improver=improver,
             )
         case "execute":
             return await generate_code_for_query_with_execute_method(
                 query=query_to_generate.query,
                 bind_params=params,
-                function_name=StringInSnakeLowerCase(query_to_generate.function_name),
+                function_name=query_to_generate.function_name,
                 code_quality_improver=improver,
             )
 

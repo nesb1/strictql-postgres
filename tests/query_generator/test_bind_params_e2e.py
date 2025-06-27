@@ -15,6 +15,7 @@ from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from strictql_postgres.supported_postgres_types import (
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
@@ -85,7 +86,7 @@ async def test_generate_code_and_execute_for_simple_types_in_bind_param(
             query=query,
             params={"param": Parameter(is_optional=True)},
             return_type="list",
-            function_name=function_name,
+            function_name=StringInSnakeLowerCase(function_name),
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
     )
@@ -181,7 +182,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query=query,
-            function_name=function_name,
+            function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
             return_type="list",
         ),
@@ -228,7 +229,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query=query,
-            function_name=function_name,
+            function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
             return_type="execute",
         ),

@@ -1,7 +1,7 @@
 import dataclasses
 
 
-class StringNotInSnakeCase(ValueError):
+class StringNotInLowerSnakeCase(ValueError):
     pass
 
 
@@ -13,10 +13,12 @@ class StringInSnakeLowerCase:
         if "_" in self.value:
             for snake_case_part in self.value.split("_"):
                 if snake_case_part.lower() != snake_case_part:
-                    raise StringNotInSnakeCase("String contains upper case characters")
+                    raise StringNotInLowerSnakeCase(
+                        "String contains upper case characters"
+                    )
             return
 
         if self.value.lower() == self.value:
             return
 
-        raise StringNotInSnakeCase("String contains upper case characters")
+        raise StringNotInLowerSnakeCase("String contains upper case characters")

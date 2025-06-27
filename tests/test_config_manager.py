@@ -21,6 +21,7 @@ from strictql_postgres.queries_to_generate import (
     QueryToGenerate,
     StrictQLQueriesToGenerate,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 
 def test_get_strictql_settings_works() -> None:
@@ -39,7 +40,7 @@ def test_get_strictql_settings_works() -> None:
                 database_name="db1",
                 database_connection_url=connection_url_to_db1,
                 return_type="list",
-                function_name="select_all1",
+                function_name=StringInSnakeLowerCase("select_all1"),
             ),
             (code_generation_directory_path / "file2.py").resolve(): QueryToGenerate(
                 query="select * from table",
@@ -51,7 +52,7 @@ def test_get_strictql_settings_works() -> None:
                 database_name="db2",
                 database_connection_url=connection_url_to_db2,
                 return_type="list",
-                function_name="select_all2",
+                function_name=StringInSnakeLowerCase("select_all2"),
             ),
         },
         generated_code_path=code_generation_directory_path,
@@ -370,3 +371,42 @@ def test_parse_toml_as_model_not_valid_model() -> None:
             error.value.error
             == f"Error when parsing decoded toml dict from file `{path}`"
         )
+
+
+def test_get_quiries_to_generate_raises_error_if_query_name_not_lower_snake_case() -> (
+    None
+):
+    code_generation_directory_path = pathlib.Path("generated_code")
+    connection_url_to_db1 = SecretStr("connect_to_postgres1")
+    connection_url_to_db2 = SecretStr("connect_to_postgres2")
+    query_file_path = pathlib.Path("query_file.toml")
+    with pytest.raises(GetStrictQLQueriesToGenerateError) as error:
+        get_strictql_queries_to_generate(
+            parsed_queries_to_generate_by_query_file_path={
+                query_file_path: {
+                    "selectAll": ParsedQueryToGenerate(
+                        query="select * from table",
+                        parameter_names={
+                            "param": ParsedParameter(is_optional=False),
+                        },
+                        database="db1",
+                        return_type="list",
+                        relative_path="file1.py",
+                    ),
+                }
+            },
+            code_generated_dir=str(code_generation_directory_path),
+            parsed_databases={
+                "db1": ParsedDatabase(env_name_to_read_connection_url="DB1"),
+                "db2": ParsedDatabase(env_name_to_read_connection_url="DB2"),
+            },
+            environment_variables={
+                "DB1": connection_url_to_db1.get_secret_value(),
+                "DB2": connection_url_to_db2.get_secret_value(),
+            },
+        )
+
+    assert (
+        error.value.error
+        == f"Query name not in lower case snake string, query identifier: `{query_file_path.resolve()}::selectAll`"
+    )

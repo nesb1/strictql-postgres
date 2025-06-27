@@ -15,6 +15,7 @@ from strictql_postgres.queries_to_generate import (
     QueryToGenerate,
     StrictQLQueriesToGenerate,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 
 async def test_strictql_generator_works() -> None:
@@ -33,7 +34,7 @@ async def test_strictql_generator_works() -> None:
                         database_name="db",
                         database_connection_url=db_connection_url,
                         return_type="list",
-                        function_name="query",
+                        function_name=StringInSnakeLowerCase("query"),
                     ),
                     generated_code_dir_path
                     / pathlib.Path("query2.py"): QueryToGenerate(
@@ -42,7 +43,7 @@ async def test_strictql_generator_works() -> None:
                         database_name="db",
                         database_connection_url=db_connection_url,
                         return_type="list",
-                        function_name="query",
+                        function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
@@ -70,7 +71,7 @@ async def test_strictql_generator_supports_subdirectories() -> None:
                         database_name="db",
                         database_connection_url=db_connection_url,
                         return_type="list",
-                        function_name="query",
+                        function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
@@ -98,7 +99,7 @@ async def test_strictql_generator_creates_generated_code_dir_if_it_does_not_exis
                         database_name="db",
                         database_connection_url=db_connection_url,
                         return_type="list",
-                        function_name="query",
+                        function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
@@ -148,7 +149,7 @@ async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_
                         database_name="db",
                         database_connection_url=db_connection_url,
                         return_type="list",
-                        function_name="query",
+                        function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
                 databases={"db": DataBaseSettings(connection_url=db_connection_url)},
@@ -156,9 +157,9 @@ async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_
             )
         )
 
-        file_names = [file.name for file in generated_code_dir_path.iterdir()]
+        file_names = {file.name for file in generated_code_dir_path.iterdir()}
 
-        assert file_names == ["query1.py", STRICTQL_META_FILE_NAME]
+        assert file_names == {"query1.py", STRICTQL_META_FILE_NAME}
 
 
 async def test_strictql_generator_raises_error_if_generated_code_directory_exists_without_meta_file_content() -> (
@@ -183,7 +184,7 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
                             database_name="db",
                             database_connection_url=db_connection_url,
                             return_type="list",
-                            function_name="query",
+                            function_name=StringInSnakeLowerCase("query"),
                         ),
                     },
                     databases={
@@ -232,7 +233,7 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
                             database_name="db",
                             database_connection_url=db_connection_url,
                             return_type="list",
-                            function_name="query",
+                            function_name=StringInSnakeLowerCase("query"),
                         ),
                     },
                     databases={
