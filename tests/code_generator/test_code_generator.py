@@ -6,7 +6,7 @@ from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
 )
-from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.common_types import (
     BindParam,
     NotEmptyRowSchema,
@@ -24,7 +24,7 @@ EXPECTED_GENERATED_CODE_DIR = pathlib.Path(__file__).parent / "expected_generate
 
 
 async def test_code_generator_fetch_all_without_bind_params(
-    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeQualityImprover
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
 ) -> None:
     await asyncpg_connection_pool_to_test_db.execute(
         "create table users (id serial not null, name text)"
@@ -66,7 +66,7 @@ async def test_code_generator_fetch_all_without_bind_params(
 
 
 async def test_code_generator_pydantic_with_bind_params(
-    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeQualityImprover
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
 ) -> None:
     await asyncpg_connection_pool_to_test_db.execute(
         "create table users (id serial not null, name text)"
@@ -113,7 +113,7 @@ async def test_code_generator_pydantic_with_bind_params(
 
 
 async def test_code_generator_execute_with_bind_params(
-    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeQualityImprover
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
 ) -> None:
     await asyncpg_connection_pool_to_test_db.execute(
         "create table users (id serial not null, name text)"
@@ -154,7 +154,7 @@ async def test_code_generator_execute_with_bind_params(
 
 
 async def test_code_generator_execute_without_bind_params(
-    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeQualityImprover
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
 ) -> None:
     await asyncpg_connection_pool_to_test_db.execute(
         "create table users (id serial not null, name text)"

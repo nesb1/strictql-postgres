@@ -6,7 +6,7 @@ from mako.template import (  # type: ignore[import-untyped] # mako has not typin
 
 from pglast import prettify
 from strictql_postgres.code_quality import (
-    CodeQualityImprover,
+    CodeFixer,
     CodeQualityImproverError,
 )
 from strictql_postgres.common_types import BindParams, NotEmptyRowSchema
@@ -36,7 +36,7 @@ async def generate_code_for_query_with_fetch_all_method(
     result_schema: NotEmptyRowSchema,
     bind_params: BindParams,
     function_name: StringInSnakeLowerCase,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> str:
     query = prettify(query)
     model_type = ModelType(
@@ -101,7 +101,7 @@ async def generate_code_for_query_with_execute_method(
     query: str,
     bind_params: BindParams,
     function_name: StringInSnakeLowerCase,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> str:
     query = prettify(query)
     rendered_code: str
