@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import asyncpg
-from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaGetterError,
     PgResponseSchemaTypeNotSupported,
@@ -26,7 +26,7 @@ from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 async def test_query_invalid(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query: str,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
@@ -47,7 +47,7 @@ async def test_query_invalid(
 
 async def test_param_names_equals_query_bind_params(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
@@ -95,7 +95,7 @@ async def test_param_names_not_equals_query_bind_params(
     query: str,
     param_names: list[str],
     expected_param_names: int,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
@@ -144,7 +144,7 @@ async def test_handle_response_schema_getter_error(
 
 async def test_generate_code_with_params_when_some_params_not_optional(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 

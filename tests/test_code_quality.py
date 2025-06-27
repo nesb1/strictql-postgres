@@ -7,7 +7,6 @@ import pytest
 from strictql_postgres.code_quality import (
     MypyCodeQualityError,
     MypyRunner,
-    RuffCodeQualityError,
     run_ruff_format,
     run_ruff_lint_with_fix,
 )
@@ -26,22 +25,10 @@ async def test_ruff_check_with_fix_works_when_no_fix_required() -> None:
     assert fixed_code == "a = 1"
 
 
-async def test_ruff_check_error() -> None:
-    code_with_ruff_error = "True == True"
-    with pytest.raises(RuffCodeQualityError):
-        await run_ruff_lint_with_fix(code=code_with_ruff_error)
-
-
 async def test_ruff_format() -> None:
     code = "a=1"
     fixed_code = await run_ruff_format(code=code)
     assert fixed_code == "a = 1\n"
-
-
-async def test_ruff_format_error() -> None:
-    code_with_ruff_error = "syntax error"
-    with pytest.raises(RuffCodeQualityError):
-        await run_ruff_lint_with_fix(code=code_with_ruff_error)
 
 
 def test_project_root_is_actual() -> None:

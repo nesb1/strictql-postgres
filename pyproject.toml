@@ -17,6 +17,14 @@ dependencies = [
     "pglast>=7.3,<8"
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+strictql-postgres = "strictql_postgres.__main__:app"
+
+
 [dependency-groups]
 test = [
     "pytest",

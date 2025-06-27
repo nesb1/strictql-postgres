@@ -1,5 +1,4 @@
 import dataclasses
-import pathlib
 from typing import Literal
 
 from pydantic import BaseModel
@@ -10,7 +9,7 @@ from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
 )
-from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
 from strictql_postgres.pg_bind_params_type_getter import get_bind_params_python_types
 from strictql_postgres.pg_response_schema_getter import (
@@ -109,7 +108,7 @@ async def generate_query_python_code(
                         type_=parameter_from_pg,
                     )
                 )
-    improver = CodeQualityImprover(mypy_runner=MypyRunner(mypy_path=pathlib.Path.cwd()))
+    improver = CodeFixer()
     match query_to_generate.return_type:
         case "list":
             return await generate_code_for_query_with_fetch_all_method(

@@ -7,7 +7,7 @@ import pydantic
 import pytest
 
 import asyncpg
-from strictql_postgres.code_quality import CodeQualityImprover
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
@@ -76,7 +76,7 @@ async def test_generate_code_and_execute_for_simple_types_in_response_model(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
     expected_python_value: object,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     query = f"select {query_literal} as value"
     function_name = "fetch_all_test"
@@ -175,7 +175,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
     expected_python_value: object,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     query = f"select {query_literal} as value"
     function_name = "fetch_all_test"
