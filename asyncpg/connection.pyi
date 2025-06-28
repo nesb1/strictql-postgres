@@ -13,14 +13,14 @@ class Connection:
         self,
         query: str,
         *args: object,
-        timeout: int | None = None,
+        timeout: float | None = None,
         record_class: type[Record] | None = None,
     ) -> Record | None: ...
     async def fetch(
         self,
         query: str,
         *args: object,
-        timeout: int | None = None,
+        timeout: float | None = None,
         record_class: type[Record] | None = None,
     ) -> list[Record]: ...
     async def prepare(
@@ -28,7 +28,7 @@ class Connection:
         query: str,
         *,
         name: str | None = None,
-        timeout: int | None = None,
+        timeout: float | None = None,
         record_class: type[Record] | None = None,
     ) -> PreparedStatement: ...
     async def close(self) -> None: ...

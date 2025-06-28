@@ -38,7 +38,7 @@ class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,mi
     query: str
     parameter_names: dict[str, ParsedParameter] = {}
     database: str
-    return_type: Literal["list"]
+    return_type: Literal["list", "execute"]
     relative_path: str
 
 

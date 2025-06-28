@@ -19,7 +19,7 @@ class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     parameters: dict[str, Parameter]
     database_name: str
     database_connection_url: SecretStr
-    return_type: Literal["list"]
+    return_type: Literal["list", "execute"]
     function_name: StringInSnakeLowerCase
 
 

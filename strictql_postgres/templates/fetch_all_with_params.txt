@@ -6,9 +6,9 @@ ${import_}
 ${model}
 % endfor
 
-async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_str}" for param in params])}) -> Sequence[${model_name}]:
+async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_str}" for param in params])}, timeout: timedelta | None = None) -> Sequence[${model_name}]:
     query = """
     ${query}
 """
-    records = await connection.fetch(query, ${", ".join([param.name_in_function for param in params])})
+    records = await connection.fetch(query, ${", ".join([param.name_in_function for param in params])},timeout=timeout.total_seconds() if timeout is not None else None)
     return convert_records_to_pydantic_models(records=records, pydantic_model_type=${model_name})

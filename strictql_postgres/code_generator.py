@@ -49,6 +49,7 @@ async def generate_code_for_query_with_fetch_all_method(
     )
     imports = {
         "from asyncpg import Connection",
+        "from datetime import timedelta",
         "from collections.abc import Sequence",
         "from strictql_postgres.api import convert_records_to_pydantic_models",
     }
@@ -105,7 +106,10 @@ async def generate_code_for_query_with_execute_method(
 ) -> str:
     query = prettify(query)
     rendered_code: str
-    imports = {"from asyncpg import Connection"}
+    imports = {
+        "from asyncpg import Connection",
+        "from datetime import timedelta",
+    }
     if len(bind_params) == 0:
         mako_template_path = (TEMPLATES_DIR / "execute_without_params.txt").read_text()
         rendered_code = Template(mako_template_path).render(  # type: ignore[misc] # Any expression because mako has not typing annotations
