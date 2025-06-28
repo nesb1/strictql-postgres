@@ -5,7 +5,6 @@ import pytest
 
 from strictql_postgres.meta_file import (
     GenerateMetaFileError,
-    MetaFileModel,
     generate_meta_file,
 )
 
@@ -21,11 +20,9 @@ def test_generate_meta_file_works() -> None:
         file1.write_text("som text 1231231")
         file2.write_text("som text 32131231")
 
-        assert generate_meta_file(tmp_dir_path, meta_file_name="") == MetaFileModel(
-            files_checksums={
-                "file1.py": "7aaac2a16de6c1e9b340dd1763d95246ba8103318aa040adf6767cb6040b769d",
-                "subdir/file2.py": "548fdebb828e73402772d16dd825c9e6b1dac0e1a15d60a79c73140086161995",
-            }
+        assert (
+            generate_meta_file(tmp_dir_path, meta_file_name="")
+            == "f877da1a11d2f763fedcf6531a0cbec50a8ce4244d412026d3ee155f9df03ddf"
         )
 
 
@@ -62,9 +59,7 @@ def test_generate_meta_file_skip_meta_file() -> None:
         meta_file = tmp_dir_path / "meta_file"
         meta_file.write_text("some meta file text")
 
-        assert generate_meta_file(tmp_dir_path, meta_file.name) == MetaFileModel(
-            files_checksums={
-                "file1.py": "7aaac2a16de6c1e9b340dd1763d95246ba8103318aa040adf6767cb6040b769d",
-                "subdir/file2.py": "548fdebb828e73402772d16dd825c9e6b1dac0e1a15d60a79c73140086161995",
-            }
+        assert (
+            generate_meta_file(tmp_dir_path, meta_file.name)
+            == "f877da1a11d2f763fedcf6531a0cbec50a8ce4244d412026d3ee155f9df03ddf"
         )
