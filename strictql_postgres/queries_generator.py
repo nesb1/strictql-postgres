@@ -82,7 +82,7 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
                         query=query_to_generate.query,
                         function_name=query_to_generate.function_name,
                         params=query_to_generate.parameters,
-                        return_type=query_to_generate.return_type,
+                        query_type=query_to_generate.query_type,
                     ),
                     connection_pool=pools[query_to_generate.database_name],
                 ),

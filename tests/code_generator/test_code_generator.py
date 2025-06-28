@@ -5,6 +5,7 @@ from pglast import prettify
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
+    generate_code_for_query_with_fetch_row_method,
 )
 from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.common_types import (
@@ -18,6 +19,12 @@ from tests.code_generator.expected_generated_code.fetch_all_with_bind_params imp
 )
 from tests.code_generator.expected_generated_code.fetch_all_without_bind_params import (
     FetchAllUsersModel as FetchAllUsersModelWithoutBindParams,
+)
+from tests.code_generator.expected_generated_code.fetch_row_with_bind_params import (
+    FetchUserModel as FetchUserModelWithBindParams,
+)
+from tests.code_generator.expected_generated_code.fetch_row_without_bind_params import (
+    FetchUserModel as FetchUserModelWithoutBindParams,
 )
 
 EXPECTED_GENERATED_CODE_DIR = pathlib.Path(__file__).parent / "expected_generated_code"
@@ -107,6 +114,95 @@ async def test_code_generator_pydantic_with_bind_params(
             ),
         ],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
+        code_quality_improver=code_quality_improver,
+    )
+    assert actual_generated_code == expected_generated_code
+
+
+async def test_code_generator_fetch_row_without_bind_params(
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
+) -> None:
+    await asyncpg_connection_pool_to_test_db.execute(
+        "create table users (id serial not null, name text)"
+    )
+
+    query = prettify("SELECT * FROM users limit 1;")
+
+    from tests.code_generator.expected_generated_code.fetch_row_without_bind_params import (
+        fetch_user,
+    )
+
+    await asyncpg_connection_pool_to_test_db.execute(
+        "insert into users (id, name) values ($1, $2)",
+        1,
+        "kek",
+    )
+    async with asyncpg_connection_pool_to_test_db.acquire() as conn:
+        user = await fetch_user(conn)
+        assert user == FetchUserModelWithoutBindParams(id=1, name="kek")
+
+    with (
+        EXPECTED_GENERATED_CODE_DIR / "fetch_row_without_bind_params.py"
+    ).open() as file:
+        expected_generated_code = file.read()
+
+    db_row_model = {
+        "id": SimpleType(SimpleTypes.INT, is_optional=True),
+        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    }
+
+    actual_generated_code = await generate_code_for_query_with_fetch_row_method(
+        query=query,
+        result_schema=NotEmptyRowSchema(db_row_model),
+        bind_params=[],
+        function_name=StringInSnakeLowerCase("fetch_user"),
+        code_quality_improver=code_quality_improver,
+    )
+    assert actual_generated_code == expected_generated_code
+
+
+async def test_code_generator_fetch_row_pydantic_with_bind_params(
+    asyncpg_connection_pool_to_test_db: Pool, code_quality_improver: CodeFixer
+) -> None:
+    await asyncpg_connection_pool_to_test_db.execute(
+        "create table users (id serial not null, name text)"
+    )
+
+    query = prettify("SELECT * FROM users where id = $1 and name = $2 limit 1;")
+
+    from tests.code_generator.expected_generated_code.fetch_row_with_bind_params import (
+        fetch_user,
+    )
+
+    await asyncpg_connection_pool_to_test_db.execute(
+        "insert into users (id, name) values ($1, $2), ($3, $4)", 1, "kek", 2, "kek2"
+    )
+    async with asyncpg_connection_pool_to_test_db.acquire() as conn:
+        user = await fetch_user(conn, id=1, name="kek")
+        assert user == FetchUserModelWithBindParams(id=1, name="kek")
+
+    with (EXPECTED_GENERATED_CODE_DIR / "fetch_row_with_bind_params.py").open() as file:
+        expected_generated_code = file.read()
+
+    db_row_model = {
+        "id": SimpleType(SimpleTypes.INT, is_optional=True),
+        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    }
+
+    actual_generated_code = await generate_code_for_query_with_fetch_row_method(
+        query=query,
+        result_schema=NotEmptyRowSchema(db_row_model),
+        bind_params=[
+            BindParam(
+                name_in_function="id",
+                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+            ),
+            BindParam(
+                name_in_function="name",
+                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+            ),
+        ],
+        function_name=StringInSnakeLowerCase("fetch_user"),
         code_quality_improver=code_quality_improver,
     )
     assert actual_generated_code == expected_generated_code
