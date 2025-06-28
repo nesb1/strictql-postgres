@@ -1,0 +1,16 @@
+% for import_ in imports:
+${import_}
+% endfor
+
+% for model in models:
+${model}
+% endfor
+
+async def ${function_name}(connection: Connection, ${ ", ".join([f"{param.name_in_function}: {param.type_str}" for param in params])}, timeout: timedelta | None = None) -> ${model_name} | None:
+    query = """
+    ${query}
+"""
+    record = await connection.fetchrow(query, ${", ".join([param.name_in_function for param in params])},timeout=timeout.total_seconds() if timeout is not None else None)
+    if record is None:
+        return None
+    return convert_record_to_pydantic_model(record=record, pydantic_model_type=${model_name})
