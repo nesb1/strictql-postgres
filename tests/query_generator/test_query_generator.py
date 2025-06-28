@@ -1,3 +1,4 @@
+import datetime
 import inspect
 import types
 from collections.abc import Sequence
@@ -78,6 +79,7 @@ async def test_param_names_equals_query_bind_params(
         "connection": asyncpg.connection.Connection,
         "param1": int | None,
         "param2": int | None,
+        "timeout": datetime.timedelta | None,
         "return": Sequence[generated_module.FetchAllTestModel],  # type: ignore [name-defined]
     }
 
@@ -175,5 +177,6 @@ async def test_generate_code_with_params_when_some_params_not_optional(
         "connection": asyncpg.connection.Connection,
         "param1": int | None,
         "param2": int,
+        "timeout": datetime.timedelta | None,
         "return": Sequence[generated_module.FetchAllTestModel],  # type: ignore [name-defined]
     }
