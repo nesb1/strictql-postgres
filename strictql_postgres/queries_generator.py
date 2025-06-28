@@ -14,7 +14,7 @@ from strictql_postgres.query_generator import (
     generate_query_python_code,
 )
 
-STRICTQL_META_FILE_NAME = "strictql_meta.json"
+STRICTQL_META_FILE_NAME = "strictql_meta"
 
 
 @dataclasses.dataclass
@@ -59,7 +59,7 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
             path=queries_to_generate.generated_code_path,
             meta_file_name=STRICTQL_META_FILE_NAME,
         )
-        if expected_meta_file.model_dump_json() != meta_file_content:
+        if expected_meta_file != meta_file_content:
             raise StrictqlGeneratorError(
                 error=f"Generated code directory: `{queries_to_generate.generated_code_path.resolve()}` already exists and generated files in it are not equals to meta file content {STRICTQL_META_FILE_NAME}, looks like generated has been changed manually."
                 f" Delete the generated code directory and regenerate the code."
@@ -114,9 +114,7 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
             path=temp_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
         )
 
-        (temp_dir_path / STRICTQL_META_FILE_NAME).write_text(
-            new_meta_file_content.model_dump_json()
-        )
+        (temp_dir_path / STRICTQL_META_FILE_NAME).write_text(new_meta_file_content)
         old_path = (
             queries_to_generate.generated_code_path.parent / "generated_code_path_old"
         )
