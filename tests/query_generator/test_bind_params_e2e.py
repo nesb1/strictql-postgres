@@ -85,7 +85,7 @@ async def test_generate_code_and_execute_for_simple_types_in_bind_param(
         query_to_generate=QueryToGenerate(
             query=query,
             params={"param": Parameter(is_optional=True)},
-            return_type="list",
+            query_type="fetch",
             function_name=StringInSnakeLowerCase(function_name),
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
@@ -105,6 +105,7 @@ async def test_generate_code_and_execute_for_simple_types_in_bind_param(
     assert inspect.get_annotations(generated_module.fetch_all_test) == {  # type: ignore[misc]
         "connection": asyncpg.connection.Connection,
         "param": type(param) | None,
+        "timeout": datetime.timedelta | None,
         "return": Sequence[generated_module.FetchAllTestModel],  # type: ignore [name-defined]
     }
 
@@ -184,7 +185,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
-            return_type="list",
+            query_type="fetch",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
     )
@@ -203,6 +204,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     assert inspect.get_annotations(generated_module.fetch_all_test) == {  # type: ignore[misc]
         "connection": asyncpg.connection.Connection,
         "param": type(param) | None,
+        "timeout": datetime.timedelta | None,
         "return": Sequence[generated_module.FetchAllTestModel],  # type: ignore [name-defined]
     }
 
@@ -231,7 +233,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
-            return_type="execute",
+            query_type="execute",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
     )
@@ -247,5 +249,6 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     assert inspect.get_annotations(generated_module.fetch_all_test) == {  # type: ignore[misc]
         "connection": asyncpg.connection.Connection,
         "param": type(param) | None,
+        "timeout": datetime.timedelta | None,
         "return": str,
     }

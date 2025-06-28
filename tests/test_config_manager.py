@@ -39,7 +39,7 @@ def test_get_strictql_settings_works() -> None:
                 },
                 database_name="db1",
                 database_connection_url=connection_url_to_db1,
-                return_type="list",
+                query_type="fetch",
                 function_name=StringInSnakeLowerCase("select_all1"),
             ),
             (code_generation_directory_path / "file2.py").resolve(): QueryToGenerate(
@@ -51,7 +51,7 @@ def test_get_strictql_settings_works() -> None:
                 },
                 database_name="db2",
                 database_connection_url=connection_url_to_db2,
-                return_type="list",
+                query_type="fetch",
                 function_name=StringInSnakeLowerCase("select_all2"),
             ),
         },
@@ -71,7 +71,7 @@ def test_get_strictql_settings_works() -> None:
                         "param": ParsedParameter(is_optional=False),
                     },
                     database="db1",
-                    return_type="list",
+                    query_type="fetch",
                     relative_path="file1.py",
                 ),
                 "select_all2": ParsedQueryToGenerate(
@@ -80,7 +80,7 @@ def test_get_strictql_settings_works() -> None:
                         "param": ParsedParameter(is_optional=False),
                     },
                     database="db2",
-                    return_type="list",
+                    query_type="fetch",
                     relative_path="file2.py",
                 ),
             }
@@ -113,7 +113,7 @@ def test_get_strictql_settings_not_unique_file_path_in_one_query_file() -> None:
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="file1.py",
                     ),
                     "select_all_2": ParsedQueryToGenerate(
@@ -122,7 +122,7 @@ def test_get_strictql_settings_not_unique_file_path_in_one_query_file() -> None:
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="file1.py",
                     ),
                 }
@@ -155,7 +155,7 @@ def test_get_strictql_settings_not_unique_file_path_in_multiple_query_files() ->
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="file1.py",
                     ),
                 },
@@ -166,7 +166,7 @@ def test_get_strictql_settings_not_unique_file_path_in_multiple_query_files() ->
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="file1.py",
                     ),
                 },
@@ -204,7 +204,7 @@ def test_get_strictql_settings_raises_error_when_query_file_relative_path_contai
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path=special_path_symbol,
                     ),
                 }
@@ -236,7 +236,7 @@ def test_get_queries_to_generate_raises_error_if_database_stated_in_query_file_n
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db2",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="kek",
                     ),
                 }
@@ -268,7 +268,7 @@ def test_get_queries_to_generate_raises_error_if_database_connection_url_env_not
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="kek",
                     ),
                 }
@@ -390,7 +390,7 @@ def test_get_quiries_to_generate_raises_error_if_query_name_not_lower_snake_case
                             "param": ParsedParameter(is_optional=False),
                         },
                         database="db1",
-                        return_type="list",
+                        query_type="fetch",
                         relative_path="file1.py",
                     ),
                 }

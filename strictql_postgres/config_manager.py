@@ -38,7 +38,7 @@ class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,mi
     query: str
     parameter_names: dict[str, ParsedParameter] = {}
     database: str
-    return_type: Literal["list"]
+    query_type: Literal["fetch", "execute", "fetch_row"]
     relative_path: str
 
 
@@ -159,7 +159,7 @@ def get_strictql_queries_to_generate(
                             key: Parameter(is_optional=value.is_optional)
                             for key, value in query_to_generate.parameter_names.items()
                         },
-                        return_type=query_to_generate.return_type,
+                        query_type=query_to_generate.query_type,
                         database_name=query_to_generate.database,
                         database_connection_url=databases[
                             query_to_generate.database

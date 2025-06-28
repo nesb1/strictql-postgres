@@ -7,14 +7,14 @@ import asyncpg
 from asyncpg import Pool
 from strictql_postgres.asyncpg_result_converter import (
     RangeType,
-    convert_records_to_pydantic_models,
+    convert_record_to_pydantic_model,
 )
 
 
 async def test_asyncpg_converter(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
 ) -> None:
-    records = await asyncpg_connection_pool_to_test_db.fetch(
+    record = await asyncpg_connection_pool_to_test_db.fetchrow(
         "select 1 as a, 'kek' as b"
     )
 
@@ -22,9 +22,11 @@ async def test_asyncpg_converter(
         a: int
         b: str
 
-    assert convert_records_to_pydantic_models(
-        records=records, pydantic_model_type=Model
-    ) == [Model(a=1, b="kek")]
+    assert record is not None
+
+    assert convert_record_to_pydantic_model(
+        record=record, pydantic_model_type=Model
+    ) == Model(a=1, b="kek")
 
 
 SUPPORTED_PYTHON_TYPES = {
@@ -108,23 +110,24 @@ async def test_all_supported_types_converts(
             f"insert into test (a) values ({test_case.postgres_value_as_str})"
         )
 
-        records = await pool.fetch(query="select * from test")
+        record = await pool.fetchrow(query="select * from test")
+        assert record is not None
 
-        assert convert_records_to_pydantic_models(
-            records=records, pydantic_model_type=Model
-        ) == [Model(a=test_case.python_value)]
+        assert convert_record_to_pydantic_model(
+            record=record, pydantic_model_type=Model
+        ) == Model(a=test_case.python_value)
 
 
 async def test_convert_record_with_range_type(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-        records = await connection.fetch(query="select int4range(10,20) as value")
+        record = await connection.fetchrow(query="select int4range(10,20) as value")
 
         class Model(BaseModel):  # type: ignore[explicit-any,misc]
             value: RangeType
 
-        res = convert_records_to_pydantic_models(
-            records=records, pydantic_model_type=Model
-        )
-        assert res == [Model(value=RangeType(a=10, b=20))]
+        assert record is not None
+
+        res = convert_record_to_pydantic_model(record=record, pydantic_model_type=Model)
+        assert res == Model(value=RangeType(a=10, b=20))

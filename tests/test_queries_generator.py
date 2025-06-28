@@ -33,7 +33,7 @@ async def test_strictql_generator_works() -> None:
                         parameters={},
                         database_name="db",
                         database_connection_url=db_connection_url,
-                        return_type="list",
+                        query_type="fetch",
                         function_name=StringInSnakeLowerCase("query"),
                     ),
                     generated_code_dir_path
@@ -42,7 +42,7 @@ async def test_strictql_generator_works() -> None:
                         parameters={},
                         database_name="db",
                         database_connection_url=db_connection_url,
-                        return_type="list",
+                        query_type="fetch",
                         function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
@@ -70,7 +70,7 @@ async def test_strictql_generator_supports_subdirectories() -> None:
                         parameters={},
                         database_name="db",
                         database_connection_url=db_connection_url,
-                        return_type="list",
+                        query_type="fetch",
                         function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
@@ -98,7 +98,7 @@ async def test_strictql_generator_creates_generated_code_dir_if_it_does_not_exis
                         parameters={},
                         database_name="db",
                         database_connection_url=db_connection_url,
-                        return_type="list",
+                        query_type="fetch",
                         function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
@@ -118,7 +118,7 @@ async def test_strictql_generator_creates_generated_code_dir_if_it_does_not_exis
             generated_code_dir_path, meta_file_name=meta_file_path.name
         )
 
-        assert meta_file_content == expected_meta_file_content.model_dump_json()
+        assert meta_file_content == expected_meta_file_content
 
 
 async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_dir_equals_to_meta_file_content() -> (
@@ -136,7 +136,7 @@ async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_
             path=generated_code_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
         )
         (generated_code_dir_path / STRICTQL_META_FILE_NAME).write_text(
-            meta_file_content.model_dump_json()
+            meta_file_content
         )
 
         await generate_queries(
@@ -148,7 +148,7 @@ async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_
                         parameters={},
                         database_name="db",
                         database_connection_url=db_connection_url,
-                        return_type="list",
+                        query_type="fetch",
                         function_name=StringInSnakeLowerCase("query"),
                     ),
                 },
@@ -183,7 +183,7 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
                             parameters={},
                             database_name="db",
                             database_connection_url=db_connection_url,
-                            return_type="list",
+                            query_type="fetch",
                             function_name=StringInSnakeLowerCase("query"),
                         ),
                     },
@@ -216,7 +216,7 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
             path=generated_code_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
         )
         (generated_code_dir_path / STRICTQL_META_FILE_NAME).write_text(
-            meta_file_content.model_dump_json()
+            meta_file_content
         )
 
         another_file_path = generated_code_dir_path / "query2.py"
@@ -232,7 +232,7 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
                             parameters={},
                             database_name="db",
                             database_connection_url=db_connection_url,
-                            return_type="list",
+                            query_type="fetch",
                             function_name=StringInSnakeLowerCase("query"),
                         ),
                     },

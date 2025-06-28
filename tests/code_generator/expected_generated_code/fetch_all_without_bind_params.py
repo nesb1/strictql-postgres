@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import timedelta
 
 from pydantic import BaseModel
 
@@ -11,12 +12,16 @@ class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any,misc]
     name: str | None
 
 
-async def fetch_all_users(connection: Connection) -> Sequence[FetchAllUsersModel]:
+async def fetch_all_users(
+    connection: Connection, timeout: timedelta | None = None
+) -> Sequence[FetchAllUsersModel]:
     query = """
     SELECT *
 FROM users
 """
-    records = await connection.fetch(query)
+    records = await connection.fetch(
+        query, timeout=timeout.total_seconds() if timeout is not None else None
+    )
     return convert_records_to_pydantic_models(
         records=records, pydantic_model_type=FetchAllUsersModel
     )

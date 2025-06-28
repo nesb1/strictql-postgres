@@ -8,6 +8,7 @@ from asyncpg.exceptions import PostgresSyntaxError
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
+    generate_code_for_query_with_fetch_row_method,
 )
 from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
@@ -65,7 +66,7 @@ class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
     function_name: StringInSnakeLowerCase
     params: dict[str, Parameter]
-    return_type: Literal["list", "execute"]
+    query_type: Literal["fetch", "execute", "fetch_row"]
 
 
 async def generate_query_python_code(
@@ -109,8 +110,8 @@ async def generate_query_python_code(
                     )
                 )
     improver = CodeFixer()
-    match query_to_generate.return_type:
-        case "list":
+    match query_to_generate.query_type:
+        case "fetch":
             return await generate_code_for_query_with_fetch_all_method(
                 query=query_to_generate.query,
                 result_schema=NotEmptyRowSchema(schema=schema),
@@ -121,6 +122,14 @@ async def generate_query_python_code(
         case "execute":
             return await generate_code_for_query_with_execute_method(
                 query=query_to_generate.query,
+                bind_params=params,
+                function_name=query_to_generate.function_name,
+                code_quality_improver=improver,
+            )
+        case "fetch_row":
+            return await generate_code_for_query_with_fetch_row_method(
+                query=query_to_generate.query,
+                result_schema=NotEmptyRowSchema(schema=schema),
                 bind_params=params,
                 function_name=query_to_generate.function_name,
                 code_quality_improver=improver,
