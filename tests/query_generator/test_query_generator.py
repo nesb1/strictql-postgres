@@ -6,12 +6,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import asyncpg
-from strictql_postgres.code_quality import CodeQualityImprover
-from strictql_postgres.config_manager import Parameter
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaGetterError,
     PgResponseSchemaTypeNotSupported,
 )
+from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.query_generator import (
     InvalidParamNames,
     InvalidResponseSchemaError,
@@ -19,13 +19,14 @@ from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
 )
+from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 
 @pytest.mark.parametrize("query", ["sselect 1", "invalid_query"])
 async def test_query_invalid(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query: str,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
@@ -33,8 +34,8 @@ async def test_query_invalid(
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
-                function_name=function_name,
-                params=[],
+                function_name=StringInSnakeLowerCase(function_name),
+                params={},
                 return_type="list",
             ),
             connection_pool=asyncpg_connection_pool_to_test_db,
@@ -46,18 +47,18 @@ async def test_query_invalid(
 
 async def test_param_names_equals_query_bind_params(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
-            function_name=function_name,
-            params=[
-                Parameter(name="param1", is_optional=True),
-                Parameter(name="param2", is_optional=True),
-            ],
+            function_name=StringInSnakeLowerCase(function_name),
+            params={
+                "param1": Parameter(is_optional=True),
+                "param2": Parameter(is_optional=True),
+            },
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,
@@ -94,18 +95,16 @@ async def test_param_names_not_equals_query_bind_params(
     query: str,
     param_names: list[str],
     expected_param_names: int,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
     with pytest.raises(InvalidParamNames) as error:
-        params = [
-            Parameter(name=parm_name, is_optional=True) for parm_name in param_names
-        ]
+        params = {parm_name: Parameter(is_optional=True) for parm_name in param_names}
         await generate_query_python_code(
             query_to_generate=QueryToGenerate(
                 query=query,
-                function_name=function_name,
+                function_name=StringInSnakeLowerCase(function_name),
                 params=params,
                 return_type="list",
             ),
@@ -132,8 +131,8 @@ async def test_handle_response_schema_getter_error(
             await generate_query_python_code(
                 query_to_generate=QueryToGenerate(
                     query="select 1",
-                    function_name=function_name,
-                    params=[],
+                    function_name=StringInSnakeLowerCase(function_name),
+                    params={},
                     return_type="list",
                 ),
                 connection_pool=asyncpg_connection_pool_to_test_db,
@@ -145,18 +144,18 @@ async def test_handle_response_schema_getter_error(
 
 async def test_generate_code_with_params_when_some_params_not_optional(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
-    code_quality_improver: CodeQualityImprover,
+    code_quality_improver: CodeFixer,
 ) -> None:
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
         query_to_generate=QueryToGenerate(
             query="select $1::integer as v1, $2::integer as v2",
-            function_name=function_name,
-            params=[
-                Parameter(name="param1", is_optional=True),
-                Parameter(name="param2", is_optional=False),
-            ],
+            function_name=StringInSnakeLowerCase(function_name),
+            params={
+                "param1": Parameter(is_optional=True),
+                "param2": Parameter(is_optional=False),
+            },
             return_type="list",
         ),
         connection_pool=asyncpg_connection_pool_to_test_db,

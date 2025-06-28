@@ -1,4 +1,5 @@
 import logging
+import os
 import pathlib
 import sys
 from dataclasses import dataclass
@@ -6,19 +7,19 @@ from typing import Annotated, Literal
 
 from cyclopts import App
 from cyclopts import Parameter as CycloptsParameter
-from pydantic import SecretStr
 
 from strictql_postgres.config_manager import (
-    DataBaseSettings,
-    Parameter,
-    QueryToGenerate,
-    StrictqlSettings,
+    GetStrictQLQueriesToGenerateError,
+    ParsedPyprojectTomlWithStrictQLSection,
+    ParseTomlFileAsModelError,
+    QueryFileContentModel,
+    get_strictql_queries_to_generate,
+    parse_toml_file_as_model,
 )
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
 
 logger = logging.getLogger(__name__)
 
-TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
 
 app = App()
 
@@ -31,37 +32,50 @@ async def generate_from_config() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    # resolve_strictql_settings_from_parsed_settings()
+    pyproject_toml_path = pathlib.Path("pyproject.toml").resolve()
 
-    db = DataBaseSettings(
-        name="db1",
-        connection_url=SecretStr("postgresql://postgres:password@localhost/postgres"),
-    )
-    settings = StrictqlSettings(
-        queries_to_generate={
-            pathlib.Path("select_kek.py"): QueryToGenerate(
-                query="select * from testdt where dt1 = $1 and dt2 = $2 and dt3 = $3 and dt4 = $4 and dt5 = $5 and dt6 = $6;",
-                name="select from testdt",
-                parameter_names=[
-                    Parameter(name="dt1", is_optional=False),
-                    Parameter(name="dt2", is_optional=False),
-                    Parameter(name="dt3", is_optional=True),
-                    Parameter(name="dt4", is_optional=False),
-                    Parameter(name="dt5", is_optional=False),
-                    Parameter(name="dt6", is_optional=True),
-                ],
-                database=db,
-                return_type="list",
-                function_name="select_dt",
-            ),
-        },
-        databases={"db1": db},
-        generated_code_path=pathlib.Path("strictql_postgres/generated_code"),
-    )
     try:
-        await generate_queries(settings)
+        parsed_pyproject_file_with_strictql_settings = parse_toml_file_as_model(
+            path=pyproject_toml_path, model_type=ParsedPyprojectTomlWithStrictQLSection
+        )
+    except ParseTomlFileAsModelError:
+        logger.exception(f"Error occurred while parsing {pyproject_toml_path} file")
+        exit(1)
+
+    parsed_strictql_settings = (
+        parsed_pyproject_file_with_strictql_settings.tool.strictql_postgres
+    )
+    parsed_query_files = {}
+    for query_file in parsed_strictql_settings.query_files_path:
+        query_file_path = pathlib.Path(query_file).resolve()
+
+        try:
+            parsed_query_file_content = parse_toml_file_as_model(
+                path=query_file_path, model_type=QueryFileContentModel
+            )
+        except ParseTomlFileAsModelError:
+            logger.exception(
+                f"Error occurred while parsing query file: `{query_file_path}`"
+            )
+            sys.exit(1)
+
+        parsed_query_files[query_file_path] = parsed_query_file_content.queries
+    try:
+        queries_to_generate = get_strictql_queries_to_generate(
+            parsed_queries_to_generate_by_query_file_path=parsed_query_files,
+            code_generated_dir=parsed_strictql_settings.code_generate_dir,
+            parsed_databases=parsed_strictql_settings.databases,
+            environment_variables=os.environ,
+        )
+    except GetStrictQLQueriesToGenerateError:
+        logger.exception(
+            "Error occurred while collecting quiries to generate from parsed configs"
+        )
+        sys.exit(1)
+    try:
+        await generate_queries(queries_to_generate)
     except StrictqlGeneratorError as error:
-        logger.error(error)
+        logger.error(error.error)
         sys.exit(1)
 
 

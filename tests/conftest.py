@@ -4,7 +4,7 @@ from typing import AsyncIterator
 import pytest
 
 import asyncpg
-from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
+from strictql_postgres.code_quality import CodeFixer
 
 POSTGRES_HOST = "127.0.0.1"
 POSTGRES_PORT = 5432
@@ -87,10 +87,5 @@ PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 
 
 @pytest.fixture()
-def mypy_runner() -> MypyRunner:
-    return MypyRunner(mypy_path=PROJECT_ROOT)
-
-
-@pytest.fixture()
-def code_quality_improver(mypy_runner: MypyRunner) -> CodeQualityImprover:
-    return CodeQualityImprover(mypy_runner=mypy_runner)
+def code_quality_improver() -> CodeFixer:
+    return CodeFixer()

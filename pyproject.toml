@@ -17,11 +17,20 @@ dependencies = [
     "pglast>=7.3,<8"
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+strictql-postgres = "strictql_postgres.__main__:app"
+
+
 [dependency-groups]
 test = [
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
+    "tomli-w"
 ]
 lint = ["ruff", "mypy"]
 
@@ -48,8 +57,10 @@ disallow_subclassing_any = "true"
 asyncio_mode = "auto"
 log_level = "DEBUG"
 
-[tool.strictql-postgres]
-directory = "strctql_postgres/stirctql_generated"
-query_files = [
-    "strictql-users.yaml"
+[tool.strictql_postgres]
+code_generate_dir = "strictql_postgres/strictql_generated"
+query_files_path = [
+    "strictql-kek.toml"
 ]
+[tool.strictql_postgres.databases]
+db = { env_name_to_read_connection_url = "DB_URL" }

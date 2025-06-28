@@ -26,7 +26,7 @@ async def run_ruff_lint_with_fix(code: str) -> str:
         "check",
         "--extend-select",
         "I",
-        "--fix",
+        "--fix-only",
         "-",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
@@ -119,16 +119,12 @@ class CodeQualityImproverError(Exception):
     pass
 
 
-class CodeQualityImprover:
-    def __init__(self, mypy_runner: MypyRunner) -> None:
-        self._mypy_runner = mypy_runner
-
+class CodeFixer:
     async def try_to_improve_code(self, code: str) -> str:
         try:
             code = await run_ruff_format(code=code)
             code = await run_ruff_lint_with_fix(code=code)
-            await self._mypy_runner.run_mypy(code=code)
-        except (RuffCodeQualityError, MypyCodeQualityError) as error:
+        except RuffCodeQualityError as error:
             raise CodeQualityImproverError(
                 f"Code quality improvement failed: {format_exception(exception=error)}"
             ) from error

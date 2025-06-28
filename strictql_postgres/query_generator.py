@@ -1,5 +1,4 @@
 import dataclasses
-import pathlib
 from typing import Literal
 
 from pydantic import BaseModel
@@ -10,9 +9,8 @@ from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
 )
-from strictql_postgres.code_quality import CodeQualityImprover, MypyRunner
+from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.common_types import BindParam, NotEmptyRowSchema
-from strictql_postgres.config_manager import Parameter
 from strictql_postgres.pg_bind_params_type_getter import get_bind_params_python_types
 from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaContainsColumnsWithInvalidNames,
@@ -21,6 +19,7 @@ from strictql_postgres.pg_response_schema_getter import (
     PgResponseSchemaTypeNotSupported,
     get_pg_response_schema_from_prepared_statement,
 )
+from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 TYPES_MAPPING = {"int4": int, "varchar": str, "text": str}
@@ -52,7 +51,7 @@ class InvalidSqlQuery(QueryPythonCodeGeneratorError):
 class InvalidParamNames(QueryPythonCodeGeneratorError):
     query: str
     expected_param_names_count: int
-    actual_params: list[Parameter]
+    actual_params: dict[str, Parameter]
 
     def __str__(self) -> str:
         return f"""{{
@@ -64,8 +63,8 @@ actual_param_names: {self.actual_params}
 
 class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
     query: str
-    function_name: str
-    params: list[Parameter]
+    function_name: StringInSnakeLowerCase
+    params: dict[str, Parameter]
     return_type: Literal["list", "execute"]
 
 
@@ -99,31 +98,31 @@ async def generate_query_python_code(
             )
         params = []
         if query_to_generate.params:
-            for parameter_from_pg, user_parameter in zip(
-                pg_param_types, query_to_generate.params
+            for parameter_from_pg, (user_parameter_name, user_parameter) in zip(
+                pg_param_types, query_to_generate.params.items()
             ):
                 parameter_from_pg.is_optional = user_parameter.is_optional
                 params.append(
                     BindParam(
-                        name_in_function=user_parameter.name,
+                        name_in_function=user_parameter_name,
                         type_=parameter_from_pg,
                     )
                 )
-    improver = CodeQualityImprover(mypy_runner=MypyRunner(mypy_path=pathlib.Path.cwd()))
+    improver = CodeFixer()
     match query_to_generate.return_type:
         case "list":
             return await generate_code_for_query_with_fetch_all_method(
                 query=query_to_generate.query,
                 result_schema=NotEmptyRowSchema(schema=schema),
                 bind_params=params,
-                function_name=StringInSnakeLowerCase(query_to_generate.function_name),
+                function_name=query_to_generate.function_name,
                 code_quality_improver=improver,
             )
         case "execute":
             return await generate_code_for_query_with_execute_method(
                 query=query_to_generate.query,
                 bind_params=params,
-                function_name=StringInSnakeLowerCase(query_to_generate.function_name),
+                function_name=query_to_generate.function_name,
                 code_quality_improver=improver,
             )
 
