@@ -80,88 +80,30 @@ async def generate_from_config() -> None:
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
-async def generate(
-    query: str,
-    function_name: str,
-    param_names: list[str] | None = None,
-    fetch_type: Literal["fetch_all", "execute", "fetch_row"] = "fetch_all",
-    dry_run: Annotated[
-        bool,
-        CycloptsParameter(
-            negative="", help="Вывести результат в stdout, не создавать файлы"
-        ),
-    ] = False,
-) -> None:
-    """
-    Сгенерировать код для выполнения sql-запросов в Postgres.
-
-    Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
-    """
-    pass
-    # async with asyncpg.create_pool(
-    #     host="127.0.0.1",
-    #     user="postgres",
-    #     password="password",
-    #     port=5432,
-    #     database="postgres",
-    # ) as connection_pool:
-    #     async with connection_pool.acquire() as connection:
-    #         prepared_statement = await connection.prepare(query=query)
-    #
-    #         schema = get_pg_response_schema_from_prepared_statement(
-    #             prepared_stmt=prepared_statement,
-    #         )
-    #
-    #         param_types = await get_bind_params_python_types(
-    #             prepared_statement=prepared_statement,
-    #         )
-    #         params = []
-    #         if param_names:
-    #             for index, parameter_type in enumerate(param_types):
-    #                 params.append(
-    #                     BindParam(
-    #                         name_in_function=param_names[index],
-    #                         type_=parameter_type.type_,
-    #                         is_optional=parameter_type.is_optional,
-    #                     )
-    #                 )
-    # match fetch_type:
-    #     case "fetch_all":
-    #         print(
-    #             await generate_code_for_query_with_fetch_all_method(
-    #                 query=query,
-    #                 result_schema=NotEmptyRowSchema(schema=schema),
-    #                 bind_params=params,
-    #                 function_name=StringInSnakeLowerCase(function_name),
-    #                 code_quality_improver=CodeQualityImprover(
-    #                     mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)
-    #                 ),
-    #             )
-    #         )
-    #     case "execute":
-    #         print(
-    #             await generate_code_for_query_with_execute_method(
-    #                 query=query,
-    #                 bind_params=params,
-    #                 function_name=StringInSnakeLowerCase(function_name),
-    #                 code_quality_improver=CodeQualityImprover(
-    #                     mypy_runner=MypyRunner(mypy_path=pathlib.Path(__file__).parent)
-    #                 ),
-    #             )
-    #         )
-    #
-    #     case "_":
-    #         raise NotImplementedError()
-
-
-@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
 async def check() -> None:
     """
     Проверить, что код для выпонления sql-запросов в Postgres находится в актуальном состоянии.
 
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
-    raise NotImplementedError()
+
+    dir1 = pathlib.Path(__file__).resolve().parent / "strictql_generated"
+
+    from strictql_postgres.dir_diff import get_diff_for_changed_files, get_missed_files
+    from strictql_postgres.directory_reader import read_directory_python_files_recursive
+
+    dir1_files = read_directory_python_files_recursive(dir1)
+    dir2_files = {
+        pathlib.Path(
+            "/Users/macbook/strictql-postgres/strictql_postgres/strictql_generated/file.py"
+        ): "kek file content\n here\n"
+    }
+
+    changes_files = get_diff_for_changed_files(dir1_files, dir2_files)
+    missed_files = get_missed_files(dir1_files, dir2_files)
+    extra_files = get_missed_files(dir2_files, dir1_files)
+    for changes_file_path, changed_file_content in changes_files.items():
+        print(f"changed_file {changes_file_path}: {changed_file_content}")
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
