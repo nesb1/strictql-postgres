@@ -4,8 +4,7 @@ import tempfile
 from strictql_postgres.directory_reader import read_directory_python_files_recursive
 
 
-def test_read_directory_python_files_recursive():
-
+def test_read_directory_python_files_recursive() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         path = pathlib.Path(tmpdir)
 

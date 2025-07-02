@@ -1,10 +1,9 @@
 import pathlib
 
-from strictql_postgres.dir_diff import get_missed_files, get_diff_for_changed_files
+from strictql_postgres.dir_diff import get_diff_for_changed_files, get_missed_files
 
 
 def test_files_diff_works() -> None:
-
     diff_for_changed_files = get_diff_for_changed_files(
         {
             pathlib.Path("a"): "content1\nkek\n",
@@ -19,9 +18,7 @@ def test_files_diff_works() -> None:
     )
 
     assert diff_for_changed_files == {
-        pathlib.Path(
-            "a"
-        ): """--- 
+        pathlib.Path("a"): """--- 
 
 +++ 
 
