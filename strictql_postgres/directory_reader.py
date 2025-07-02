@@ -9,6 +9,6 @@ def read_directory_python_files_recursive(
     for file in path.glob("**/*.py"):
         file_content = file.read_text(encoding="utf-8")
 
-        res[file] = file_content
+        res[file.resolve()] = file_content
 
     return res
