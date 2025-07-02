@@ -7,14 +7,16 @@ from typing import AsyncIterator
 from pydantic import SecretStr
 
 import asyncpg
-from strictql_postgres.meta_file import generate_meta_file
+from strictql_postgres.meta_file import (
+    FILE_EXTENSIONS_TO_EXCLUDE,
+    STRICTQL_META_FILE_NAME,
+    generate_meta_file,
+)
 from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
 from strictql_postgres.query_generator import (
     QueryToGenerate,
     generate_query_python_code,
 )
-
-STRICTQL_META_FILE_NAME = "strictql_meta"
 
 
 @dataclasses.dataclass
@@ -58,6 +60,7 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
         expected_meta_file = generate_meta_file(
             path=queries_to_generate.generated_code_path,
             meta_file_name=STRICTQL_META_FILE_NAME,
+            exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
         )
         if expected_meta_file != meta_file_content:
             raise StrictqlGeneratorError(
@@ -111,7 +114,9 @@ async def generate_queries(queries_to_generate: StrictQLQueriesToGenerate) -> No
             path.write_text(data=code)
 
         new_meta_file_content = generate_meta_file(
-            path=temp_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
+            path=temp_dir_path,
+            meta_file_name=STRICTQL_META_FILE_NAME,
+            exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
         )
 
         (temp_dir_path / STRICTQL_META_FILE_NAME).write_text(new_meta_file_content)

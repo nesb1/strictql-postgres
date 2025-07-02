@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import pathlib
 from dataclasses import dataclass
 from typing import Literal, Mapping, Union
 
@@ -196,3 +197,6 @@ def format_type(type: ALL_TYPES) -> FormattedType:
             type_=type.model_type.name,
         )
     raise NotImplementedError(type)
+
+
+FilesContentByPath = Mapping[pathlib.Path, str]

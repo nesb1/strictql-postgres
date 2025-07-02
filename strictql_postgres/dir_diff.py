@@ -1,8 +1,8 @@
 import difflib
 import pathlib
-from typing import Mapping
 
-FilesContentByPath = Mapping[pathlib.Path, str]
+from strictql_postgres.python_types import FilesContentByPath
+
 Diff = str
 
 

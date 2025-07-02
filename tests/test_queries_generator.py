@@ -4,9 +4,12 @@ from tempfile import TemporaryDirectory
 import pytest
 from pydantic import SecretStr
 
-from strictql_postgres.meta_file import generate_meta_file
-from strictql_postgres.queries_generator import (
+from strictql_postgres.meta_file import (
+    FILE_EXTENSIONS_TO_EXCLUDE,
     STRICTQL_META_FILE_NAME,
+    generate_meta_file,
+)
+from strictql_postgres.queries_generator import (
     StrictqlGeneratorError,
     generate_queries,
 )
@@ -115,7 +118,9 @@ async def test_strictql_generator_creates_generated_code_dir_if_it_does_not_exis
         meta_file_content = meta_file_path.read_text()
 
         expected_meta_file_content = generate_meta_file(
-            generated_code_dir_path, meta_file_name=meta_file_path.name
+            generated_code_dir_path,
+            meta_file_name=meta_file_path.name,
+            exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
         )
 
         assert meta_file_content == expected_meta_file_content
@@ -133,7 +138,9 @@ async def test_strictql_generator_recreate_generated_code_dir_if_existence_code_
         file_path.write_text("some text")
 
         meta_file_content = generate_meta_file(
-            path=generated_code_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
+            path=generated_code_dir_path,
+            meta_file_name=STRICTQL_META_FILE_NAME,
+            exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
         )
         (generated_code_dir_path / STRICTQL_META_FILE_NAME).write_text(
             meta_file_content
@@ -213,7 +220,9 @@ async def test_strictql_generator_raises_error_if_generated_code_directory_exist
         file_path.write_text("some text")
 
         meta_file_content = generate_meta_file(
-            path=generated_code_dir_path, meta_file_name=STRICTQL_META_FILE_NAME
+            path=generated_code_dir_path,
+            meta_file_name=STRICTQL_META_FILE_NAME,
+            exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
         )
         (generated_code_dir_path / STRICTQL_META_FILE_NAME).write_text(
             meta_file_content

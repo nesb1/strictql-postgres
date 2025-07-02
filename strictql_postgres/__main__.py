@@ -3,10 +3,9 @@ import os
 import pathlib
 import sys
 from dataclasses import dataclass
-from typing import Annotated, Literal
+from typing import Literal
 
 from cyclopts import App
-from cyclopts import Parameter as CycloptsParameter
 
 from strictql_postgres.config_manager import (
     GetStrictQLQueriesToGenerateError,
@@ -87,23 +86,7 @@ async def check() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    dir1 = pathlib.Path(__file__).resolve().parent / "strictql_generated"
-
-    from strictql_postgres.dir_diff import get_diff_for_changed_files, get_missed_files
-    from strictql_postgres.directory_reader import read_directory_python_files_recursive
-
-    dir1_files = read_directory_python_files_recursive(dir1)
-    dir2_files = {
-        pathlib.Path(
-            "/Users/macbook/strictql-postgres/strictql_postgres/strictql_generated/file.py"
-        ): "kek file content\n here\n"
-    }
-
-    changes_files = get_diff_for_changed_files(dir1_files, dir2_files)
-    missed_files = get_missed_files(dir1_files, dir2_files)
-    extra_files = get_missed_files(dir2_files, dir1_files)
-    for changes_file_path, changed_file_content in changes_files.items():
-        print(f"changed_file {changes_file_path}: {changed_file_content}")
+    raise NotImplementedError()
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
