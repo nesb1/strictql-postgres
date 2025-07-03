@@ -1,11 +1,14 @@
+import dataclasses
 import logging
 import os
 import pathlib
 import sys
-from dataclasses import dataclass
-from typing import Literal
 
 from cyclopts import App
+from rich.console import Console
+from rich.style import Style
+from rich.table import Table
+from rich.text import Text
 
 from strictql_postgres.config_manager import (
     GetStrictQLQueriesToGenerateError,
@@ -15,37 +18,42 @@ from strictql_postgres.config_manager import (
     get_strictql_queries_to_generate,
     parse_toml_file_as_model,
 )
-from strictql_postgres.dir_diff import get_missed_files, get_diff_for_changed_files
+from strictql_postgres.dir_diff import get_diff_for_changed_files, get_missed_files
 from strictql_postgres.directory_reader import read_directory_python_files_recursive
 from strictql_postgres.generated_code_writer import (
     GeneratedCodeWriterError,
     write_generated_code,
 )
 from strictql_postgres.meta_file import STRICTQL_META_FILE_NAME
+from strictql_postgres.python_types import FilesContentByPath
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
+from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
 
 logger = logging.getLogger(__name__)
 
+console = Console()
+app = App(console=console)
 
-app = App()
+
+@dataclasses.dataclass(frozen=True)
+class GenerateQueriesResult:
+    queries_to_generate: StrictQLQueriesToGenerate
+    generated_code: FilesContentByPath
 
 
-@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
-async def generate_from_config() -> None:
-    """
-    Сгенерировать код для выполнения sql-запросов в Postgres.
-
-    Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
-    """
-
+async def _generate_queries() -> GenerateQueriesResult:
     pyproject_toml_path = pathlib.Path("pyproject.toml").resolve()
 
     try:
         parsed_pyproject_file_with_strictql_settings = parse_toml_file_as_model(
             path=pyproject_toml_path, model_type=ParsedPyprojectTomlWithStrictQLSection
         )
-    except ParseTomlFileAsModelError:
-        logger.exception(f"Error occurred while parsing {pyproject_toml_path} file")
+    except ParseTomlFileAsModelError as error:
+        console.print(
+            f"Error occurred while parsing the {pyproject_toml_path} file. Error: {error.error}",
+            style=Style(color="red", bold=True),
+        )
+        console.print_exception()
         exit(1)
 
     parsed_strictql_settings = (
@@ -60,9 +68,11 @@ async def generate_from_config() -> None:
                 path=query_file_path, model_type=QueryFileContentModel
             )
         except ParseTomlFileAsModelError:
-            logger.exception(
-                f"Error occurred while parsing query file: `{query_file_path}`"
+            console.print(
+                f"Error occurred while parsing query file: `{query_file_path}`",
+                style=Style(color="red", bold=True),
             )
+            console.print_exception()
             sys.exit(1)
 
         parsed_query_files[query_file_path] = parsed_query_file_content.queries
@@ -74,27 +84,58 @@ async def generate_from_config() -> None:
             environment_variables=os.environ,
         )
     except GetStrictQLQueriesToGenerateError:
-        logger.exception(
-            "Error occurred while collecting quiries to generate from parsed configs"
+        console.print(
+            "Error occurred while collecting queries to generate from parsed configs",
+            style=Style(color="red", bold=True),
         )
-        sys.exit(1)
-    try:
-        files = await generate_queries(queries_to_generate)
-    except StrictqlGeneratorError as error:
-        logger.error(error.error)
+        console.print_exception()
         sys.exit(1)
 
+    console.print(
+        f"Generating code for {len(queries_to_generate.queries_to_generate)} queries...",
+        style=Style(color="green"),
+    )
+    try:
+        generated_code = await generate_queries(queries_to_generate)
+    except StrictqlGeneratorError:
+        console.print(
+            "Error occurred while generating queries",
+            style=Style(color="red", bold=True),
+        )
+        console.print_exception()
+        sys.exit(1)
+
+    return GenerateQueriesResult(
+        queries_to_generate=queries_to_generate, generated_code=generated_code
+    )
+
+
+@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
+async def generate() -> None:
+    """
+    Сгенерировать код для выполнения sql-запросов в Postgres.
+
+    Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
+    """
+    generate_queries_result = await _generate_queries()
     try:
         write_generated_code(
-            target_directory=queries_to_generate.generated_code_path,
-            files=files,
+            target_directory=generate_queries_result.queries_to_generate.generated_code_path,
+            files=generate_queries_result.generated_code,
             meta_file_name=STRICTQL_META_FILE_NAME,
         )
-    except GeneratedCodeWriterError as error:
-        logger.exception(
-            f"Error occurred while writing generated code to disk, error: {error.error}"
+    except GeneratedCodeWriterError:
+        console.print(
+            "Error occurred while writing generated code to disk",
+            style=Style(color="red", bold=True),
         )
+        console.print_exception()
         sys.exit(1)
+
+    console.print(
+        "Code generation completed successfully.",
+        style=Style(color="green", bold=True),
+    )
 
 
 @app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
@@ -105,105 +146,60 @@ async def check() -> None:
     Команда будет искать настройки `strictql` в файле `pyproject.toml`, если файла или настроек нет, то произойдет ошибка.
     """
 
-    pyproject_toml_path = pathlib.Path("pyproject.toml").resolve()
-
-    try:
-        parsed_pyproject_file_with_strictql_settings = parse_toml_file_as_model(
-            path=pyproject_toml_path, model_type=ParsedPyprojectTomlWithStrictQLSection
-        )
-    except ParseTomlFileAsModelError:
-        logger.exception(f"Error occurred while parsing {pyproject_toml_path} file")
-        exit(1)
-
-    parsed_strictql_settings = (
-        parsed_pyproject_file_with_strictql_settings.tool.strictql_postgres
-    )
-    parsed_query_files = {}
-    for query_file in parsed_strictql_settings.query_files_path:
-        query_file_path = pathlib.Path(query_file).resolve()
-
-        try:
-            parsed_query_file_content = parse_toml_file_as_model(
-                path=query_file_path, model_type=QueryFileContentModel
-            )
-        except ParseTomlFileAsModelError:
-            logger.exception(
-                f"Error occurred while parsing query file: `{query_file_path}`"
-            )
-            sys.exit(1)
-
-        parsed_query_files[query_file_path] = parsed_query_file_content.queries
-    try:
-        queries_to_generate = get_strictql_queries_to_generate(
-            parsed_queries_to_generate_by_query_file_path=parsed_query_files,
-            code_generated_dir=parsed_strictql_settings.code_generate_dir,
-            parsed_databases=parsed_strictql_settings.databases,
-            environment_variables=os.environ,
-        )
-    except GetStrictQLQueriesToGenerateError:
-        logger.exception(
-            "Error occurred while collecting quiries to generate from parsed configs"
-        )
-        sys.exit(1)
-    try:
-        files_to_generate = await generate_queries(queries_to_generate)
-    except StrictqlGeneratorError as error:
-        logger.error(error.error)
-        sys.exit(1)
+    generate_queries_result = await _generate_queries()
 
     actual_files = read_directory_python_files_recursive(
-        path=queries_to_generate.generated_code_path
+        path=generate_queries_result.queries_to_generate.generated_code_path
     )
 
-    missed_files = get_missed_files(actual=actual_files, expected=files_to_generate)
-    if missed_files:
-        print("missed files:")
-        for missed_file in missed_files:
-            print(f"- {missed_file.resolve()}")
+    missed_files = get_missed_files(
+        actual=actual_files, expected=generate_queries_result.generated_code
+    )
 
-    extra_files = get_missed_files(actual=files_to_generate, expected=actual_files)
+    if missed_files:
+        missed_files_table = Table(style=Style(color="red"))
+        missed_files_table.add_column("File", justify="center")
+        for missed_file in missed_files:
+            missed_files_table.add_row(str(missed_file))
+
+        console.print("Missed files:", missed_files_table)
+
+    extra_files = get_missed_files(
+        actual=generate_queries_result.generated_code, expected=actual_files
+    )
     if extra_files:
-        print("extra files:")
+        extra_files_table = Table(style=Style(color="red"))
+        extra_files_table.add_column("File", justify="center")
         for extra_file in extra_files:
-            print(f"- {extra_file.resolve()}")
+            extra_files_table.add_row(str(extra_file))
+        console.print("Extra files:", extra_files_table)
 
     diff_for_changed_files = get_diff_for_changed_files(
-        actual=actual_files, expected=files_to_generate
+        actual=actual_files, expected=generate_queries_result.generated_code
     )
+
     if diff_for_changed_files:
-        print("Changed files:")
+        console.print(
+            f"{len(diff_for_changed_files)} files changed",
+            style=Style(color="red", bold=True),
+        )
         for file_path, diff_for_changed_file in diff_for_changed_files.items():
-            print(f"- {file_path.resolve()}")
-            print(diff_for_changed_file)
-            print("\n")
+            console.print(f"- {file_path.resolve()}")
+            for row in diff_for_changed_file.splitlines():
+                if row.startswith("-"):
+                    console.print(Text(text=row, style=Style(color="red")))
+                elif row.startswith("+"):
+                    console.print(Text(text=row, style=Style(color="green")))
+                else:
+                    console.print(row)
+            console.print("\n")
+    if len(extra_files) > 0 or len(missed_files) > 0 or len(diff_for_changed_files) > 0:
+        sys.exit(1)
 
-
-@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
-async def init() -> None:
-    """
-    Инициализировать `strictql` в текущей директории.
-
-    Команда в интерактивном режиме выполнит настройку `strictql`.
-    """
-    raise NotImplementedError()
-
-
-@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
-async def collect(format: Literal["json"]) -> None:
-    """
-    Собрать все запросы в один файл для проведения инвентаризации.
-    """
-    raise NotImplementedError()
+    console.print(
+        "Check completed successfully.", style=Style(color="green", bold=True)
+    )
 
 
 if __name__ == "__main__":
     app()
-
-
-@dataclass
-class Config:
-    pass
-
-
-def read_config(path: pathlib.Path) -> Config:
-    raise NotImplementedError()

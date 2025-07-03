@@ -7,6 +7,7 @@ import pydantic
 import tomllib
 from pydantic import BaseModel, SecretStr
 
+from strictql_postgres.dataclass_error import Error
 from strictql_postgres.queries_to_generate import (
     DataBaseSettings,
     Parameter,
@@ -69,9 +70,8 @@ class GetStrictQLQueriesToGenerateError(DataClassError):
 T = TypeVar("T", bound=BaseModel)
 
 
-@dataclasses.dataclass(frozen=True)
-class ParseTomlFileAsModelError(Exception):
-    error: str
+class ParseTomlFileAsModelError(Error):
+    pass
 
 
 def parse_toml_file_as_model(path: pathlib.Path, model_type: type[T]) -> T:
