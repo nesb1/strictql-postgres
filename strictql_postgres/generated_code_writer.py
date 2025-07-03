@@ -14,6 +14,9 @@ from strictql_postgres.python_types import FilesContentByPath
 class GeneratedCodeWriterError(Exception):
     error: str
 
+    def __str__(self) -> str:
+        return self.error
+
 
 def write_generated_code(
     target_directory: pathlib.Path, files: FilesContentByPath, meta_file_name: str
