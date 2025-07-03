@@ -24,7 +24,11 @@ from strictql_postgres.generated_code_writer import (
     GeneratedCodeWriterError,
     write_generated_code,
 )
-from strictql_postgres.meta_file import STRICTQL_META_FILE_NAME
+from strictql_postgres.meta_file import (
+    FILE_EXTENSIONS_TO_EXCLUDE,
+    STRICTQL_META_FILE_NAME,
+    generate_meta_file,
+)
 from strictql_postgres.python_types import FilesContentByPath
 from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
 from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
@@ -194,6 +198,31 @@ async def check() -> None:
                     console.print(row)
             console.print("\n")
     if len(extra_files) > 0 or len(missed_files) > 0 or len(diff_for_changed_files) > 0:
+        sys.exit(1)
+
+    meta_file_path = (
+        generate_queries_result.queries_to_generate.generated_code_path
+        / STRICTQL_META_FILE_NAME
+    )
+
+    if not meta_file_path.exists():
+        console.print(
+            f"Meta file: {meta_file_path.resolve()} does not exist",
+            style=Style(color="red", bold=True),
+        )
+
+    actual_meta_file_content = meta_file_path.read_text()
+    expected_meta_file_content = generate_meta_file(
+        path=generate_queries_result.queries_to_generate.generated_code_path,
+        meta_file_name=STRICTQL_META_FILE_NAME,
+        exclude_file_extensions=FILE_EXTENSIONS_TO_EXCLUDE,
+    )
+
+    if actual_meta_file_content != expected_meta_file_content:
+        console.print(
+            "Current meta file content not equals to expected content, looks like code was changed manually",
+            style=Style(color="red", bold=True),
+        )
         sys.exit(1)
 
     console.print(
