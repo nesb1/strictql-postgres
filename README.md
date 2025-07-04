@@ -8,17 +8,17 @@ A utility for generating code to execute raw SQL queries in PostgreSQL.
 
 ## Motivation
 
-This project aims to improve convenience when working with raw queries while maintaining their simplicity.
+The project aims to simplify working with raw queries while keeping them straightforward.
 
 It provides:
 
 - Code generator for executing queries using [asyncpg](https://github.com/MagicStack/asyncpg).
-- `pydantic` model generator for database responses
+- `pydantic` model generator for database responses.
 - Syntax correctness check of the query without executing it.
-- Validation of the query against the database without executing it. It will verify that tables and other objects used
+- Validation of queries against a database without executing it. It verifies that tables and other objects used
   in the query actually exist in the database.
 - Work with multiple databases simultaneously, for example, when transferring data from one database to another.
-- Ability to integrate checks into CI
+- Ability to integrate checks into CI.
 
 Queries and their parameters are specified in configuration files.
 
@@ -57,9 +57,9 @@ relative_path = "example.py"
 
 `DB_URL=postgresql://postgres:password@localhost/postgres strictql_postgres generate`
 
-Where the environment variable `DB_URL` contains the connection link to your running database
+where the environment variable `DB_URL` contains the connection link to your running database.
 
-- The generated code will appear in the directory `your_project_name/strictql_generated`
+- The generated code will appear in the directory `your_project_name/strictql_generated`.
 
 ## Available Commands
 
@@ -72,25 +72,25 @@ General `strictql` settings should be in the `pyproject.toml` file
 
 ### Specification of pyproject.toml settings
 
-- Settings should be in the `[tool.strictql_postgres]` section
-- `code_generate_dir` - Path to the directory where the code should be generated.
-- `query_files_path` - List of files with queries
-- The `tool.strictql_postgres.databases` section should contain database settings
+- Settings must be in the `[tool.strictql_postgres]` section.
+- `code_generate_dir` - Path to the directory where the code is needed to be generated.
+- `query_files_path` - List of files with queries.
+- The `tool.strictql_postgres.databases` section must contain database settings.
 - Each database must specify the name of the environment variable with the connection string through
   `env_name_to_read_connection_url`. For example: ```db = { env_name_to_read_connection_url = "DB_URL" }```
 
 ### Query-file specification
 
-This file contains queries that need to be generated.
+This file contains queries that are needed to be generated.
 
-Each query should start with the section: ```[queries.query_name]```, where `query_name` is the name of the query in
+Each query must start with the section: ```[queries.query_name]```, where `query_name` is the name of the query in
 lower snake case format.
-Currently, the function name in the generated code will have the name `query_name`.
+Currently, the function name in the generated code has the name `query_name`.
 Query fields:
 
 - `query` - SQL query.
 - `database` - Name of the database from `pyproject.toml` that this query will be executed against.
-- `query_type` - Query type, currently there are three: `fetch`, `fetch_row`, and `execute` which correspond to methods
+- `query_type` - Query type, currently there are three ones: `fetch`, `fetch_row`, and `execute` which correspond to methods
   from `asyncpg`.
 - `relative_path` - Path to the Python file relative to `code_generate_dir` where the code will be saved. You can
   specify nested directories, `strictql` will create them.
@@ -125,7 +125,7 @@ is_optional = false
 It may seem that all these query checks without actually executing them are very difficult to implement, but this is not
 the case.
 
-PostgreSQL's binary protocol is used to check queries, which allows preparing a query for execution but not executing
+PostgreSQL's binary protocol is used to check queries, it allows preparing a query for execution but not executing
 it.
 You can read more about the `describe`
 command [here](https://www.postgresql.org/docs/current/protocol-message-formats.html).
@@ -140,14 +140,14 @@ So `StrictQL` doesn't do anything overly complex with your precious queries, no 
 ### <a name="response-model-optional"></a> Response model optionality
 
 If you have already generated code through `strictql`, you might have noticed that all fields in the output models are
-optional, even if your table has not null fields.
+optional, even if your table has not `null`-fields.
 
 Unfortunately, this is a problem that currently cannot be solved, as `postgres` does not provide information about
 whether a field in the response or query is `NOT NULL` or not.
 `postgres` views optionality not as a data type, but
 as [constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).
 
-One could object and say that you can simply get the table name from the query and find out from `postgres` through the
+You might object and say that you it can simply get the table name from the query and find out from `postgres` through the
 `pg_attributes` table about the optionality of columns.
 
 Unfortunately, this solution was rejected for the following reasons:
@@ -156,13 +156,13 @@ Unfortunately, this solution was rejected for the following reasons:
 - Queries can be quite complex, for example, having a `left join` that will set a `null` value in a `not null` field
   from the right table if it somehow did not join with the left table.
 
-I personally really dislike this limitation, however, it's not possible to solve this problem well. You could parse the
-query and extract various information from `postgres`. A prototype implementing this was developed but deleted because
+Me personally dislike this limitation for real, however, it's not possible to solve this problem well. The alternative way is to parse the
+query and extract various information from `postgres` - the prototype of it was developed but then deleted because
 it turned out to be incredibly complex and unreliable.
 
 ### Parameter optionality
 
-Special attention is also paid to query parameters and their optionality through the `is_optional` field.
+I will pay special attention to the query parameters and their optionality through the `is_optional` field.
 
 It is necessary to specify parameter optionality as there are different scenarios for executing queries:
 
@@ -184,7 +184,7 @@ In this case, to avoid mistakes, you need to specify `is_optional=False`
 
 #### Insert
 
-When inserting data into a table, we may need to insert null values.
+When inserting data into a table, we may need to insert `null` values.
 
 In this case, you need to specify `is_optional=True` in the parameter settings, but keep in mind that if the column has
 a `NOT NULL` constraint, inserting a `NULL` value will result in an error. `strictql` cannot check this for reasons
