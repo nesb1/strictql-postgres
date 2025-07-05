@@ -1,10 +1,10 @@
 import dataclasses
 import pathlib
+import tomllib
 from collections import defaultdict
 from typing import Literal, Mapping, TypeVar
 
 import pydantic
-import tomllib
 from pydantic import BaseModel, SecretStr
 
 from strictql_postgres.dataclass_error import Error

@@ -3,8 +3,8 @@ import dataclasses
 from mako.template import (  # type: ignore[import-untyped] # mako has not typing annotations
     Template,
 )
-
 from pglast import prettify
+
 from strictql_postgres.code_quality import (
     CodeFixer,
     CodeQualityImproverError,

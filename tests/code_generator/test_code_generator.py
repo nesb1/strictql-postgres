@@ -1,7 +1,8 @@
 import pathlib
 
-from asyncpg import Pool
 from pglast import prettify
+
+from asyncpg import Pool
 from strictql_postgres.code_generator import (
     generate_code_for_query_with_execute_method,
     generate_code_for_query_with_fetch_all_method,
