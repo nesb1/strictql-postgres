@@ -1,4 +1,4 @@
-class ${model_name}(BaseModel): # type: ignore[explicit-any,misc]
+class ${model_name}(BaseModel): # type: ignore[explicit-any]
 % for field_name, field_type in fields.items():
     ${field_name}: ${field_type}
 % endfor

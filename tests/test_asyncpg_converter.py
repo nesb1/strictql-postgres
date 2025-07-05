@@ -18,7 +18,7 @@ async def test_asyncpg_converter(
         "select 1 as a, 'kek' as b"
     )
 
-    class Model(BaseModel):  # type:ignore[explicit-any,misc]
+    class Model(BaseModel):  # type:ignore[explicit-any]
         a: int
         b: str
 
@@ -100,7 +100,7 @@ async def test_all_supported_types_exist_in_test_cases() -> None:
 async def test_all_supported_types_converts(
     asyncpg_connection_pool_to_test_db: Pool, test_case: TypeConverterTestCase
 ) -> None:
-    class Model(BaseModel):  # type:ignore[explicit-any,misc]
+    class Model(BaseModel):  # type:ignore[explicit-any]
         a: test_case.python_type  # type:ignore[name-defined] # mypy wtf
 
     async with asyncpg_connection_pool_to_test_db.acquire() as pool:
@@ -124,7 +124,7 @@ async def test_convert_record_with_range_type(
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         record = await connection.fetchrow(query="select int4range(10,20) as value")
 
-        class Model(BaseModel):  # type: ignore[explicit-any,misc]
+        class Model(BaseModel):  # type: ignore[explicit-any]
             value: RangeType
 
         assert record is not None

@@ -7,7 +7,7 @@ from asyncpg import Connection
 from strictql_postgres.api import convert_records_to_pydantic_models
 
 
-class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any,misc]
+class FetchAllUsersModel(BaseModel):  # type: ignore[explicit-any]
     id: int | None
     name: str | None
 

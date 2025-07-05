@@ -7,24 +7,24 @@ from strictql_postgres.complex_type_converter import (
 )
 
 
-class SimpleType(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class SimpleType(pydantic.BaseModel):  # type: ignore[explicit-any]
     a: int
     b: int
 
 
-class TypeWithOptional(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class TypeWithOptional(pydantic.BaseModel):  # type: ignore[explicit-any]
     a: int | None
 
 
-class TypeWithList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class TypeWithList(pydantic.BaseModel):  # type: ignore[explicit-any]
     l: list[int]  # noqa: E741
 
 
-class TypeWithInnerList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class TypeWithInnerList(pydantic.BaseModel):  # type: ignore[explicit-any]
     l: list[SimpleType]  # noqa: E741
 
 
-class TypeWithInnerInnerList(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class TypeWithInnerInnerList(pydantic.BaseModel):  # type: ignore[explicit-any]
     l: list[TypeWithInnerList]  # noqa: E741
 
 

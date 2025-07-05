@@ -288,7 +288,7 @@ def test_get_queries_to_generate_raises_error_if_database_connection_url_env_not
 def test_parse_toml_as_model_works() -> None:
     with tempfile.NamedTemporaryFile(mode="r+") as file:
 
-        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any]
             a: int
             b: str
 
@@ -306,7 +306,7 @@ def test_parse_toml_as_model_works() -> None:
 
 
 def test_parse_toml_files_as_model_file_not_found() -> None:
-    class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    class Model(pydantic.BaseModel):  # type: ignore[explicit-any]
         a: int
         b: str
 
@@ -318,7 +318,7 @@ def test_parse_toml_files_as_model_file_not_found() -> None:
 
 
 def test_parse_toml_files_as_model_is_not_a_file() -> None:
-    class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+    class Model(pydantic.BaseModel):  # type: ignore[explicit-any]
         a: int
         b: str
 
@@ -334,7 +334,7 @@ def test_parse_toml_files_as_model_is_not_a_file() -> None:
 def test_parse_toml_as_model_not_valid_toml() -> None:
     with tempfile.NamedTemporaryFile(mode="r+") as file:
 
-        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any]
             a: int
             b: str
 
@@ -352,7 +352,7 @@ def test_parse_toml_as_model_not_valid_toml() -> None:
 def test_parse_toml_as_model_not_valid_model() -> None:
     with tempfile.NamedTemporaryFile(mode="r+") as file:
 
-        class Model(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+        class Model(pydantic.BaseModel):  # type: ignore[explicit-any]
             a: int
             b: str
 
