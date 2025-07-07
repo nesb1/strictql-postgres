@@ -4,7 +4,7 @@
 
 A utility for generating code to execute raw SQL queries in PostgreSQL.
 
-`pip install strictql-poostgres`
+`pip install strictql-postgres`
 
 ## Motivation
 
