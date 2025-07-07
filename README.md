@@ -62,7 +62,7 @@ relative_path = "example.py"
 
 - Generate code using the command:
 
-`DB_URL=postgresql://postgres:password@localhost/postgres strictql_postgres generate`
+`DB_URL=postgresql://postgres:password@localhost/postgres strictql-postgres generate`
 
 where the environment variable `DB_URL` contains the connection link to your running database.
 
