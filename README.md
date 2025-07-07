@@ -28,6 +28,13 @@ Thus, `StrictQL` solves the following problems:
 - Presence of non-working SQL queries in the code.
 - Significant time costs for writing, and especially for maintaining queries
 
+## Project status
+
+The project is actively developing, currently only a part of the types is supported. The supported types can be found [here](https://github.com/nesb1/strictql-postgres/blob/main/strictql_postgres/supported_postgres_types.py)
+
+The remaining types will be added over time.
+
+
 ## Usage Example
 
 - Add these lines to `pyproject.toml`:
