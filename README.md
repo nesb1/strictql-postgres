@@ -68,6 +68,37 @@ where the environment variable `DB_URL` contains the connection link to your run
 
 - The generated code will appear in the directory `your_project_name/strictql_generated`.
 
+- The following code is generated for the query from the example:
+
+```python
+from collections.abc import Sequence
+from datetime import timedelta
+
+from pydantic import BaseModel
+
+from asyncpg import Connection
+from strictql_postgres.api import convert_records_to_pydantic_models
+
+
+class Select1Model(BaseModel):  # type: ignore[explicit-any]
+    value: int | None
+
+
+async def select_1(
+    connection: Connection, timeout: timedelta | None = None
+) -> Sequence[Select1Model]:
+    query = """
+    SELECT 1 AS value
+"""
+    records = await connection.fetch(
+        query, timeout=timeout.total_seconds() if timeout is not None else None
+    )
+    return convert_records_to_pydantic_models(
+        records=records, pydantic_model_type=Select1Model
+    )
+
+```
+
 ## Available Commands
 
 - `generate` Generates code based on configuration files
