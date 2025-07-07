@@ -10,7 +10,7 @@ from asyncpg.types import Range
 T = TypeVar("T", bound=BaseModel)
 
 
-class RangeType(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class RangeType(pydantic.BaseModel):  # type: ignore[explicit-any]
     a: object
     b: object
 

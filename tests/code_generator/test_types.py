@@ -116,11 +116,11 @@ def test_format_model_as_pydantic_model() -> None:
         )
     )
     inner_model_code = """
-class InnerModel(BaseModel): # type: ignore[explicit-any,misc]
+class InnerModel(BaseModel): # type: ignore[explicit-any]
     field: str | None
     with_import: date | None"""
     test_model_code = """
-class TestModel(BaseModel): # type: ignore[explicit-any,misc]
+class TestModel(BaseModel): # type: ignore[explicit-any]
     text_field: str | None
     with_import: time | None
     inner_optional: InnerModel | None

@@ -6,7 +6,7 @@ import pathlib
 import pydantic
 
 
-class MetaFileModel(pydantic.BaseModel):  # type: ignore[misc,explicit-any]
+class MetaFileModel(pydantic.BaseModel):  # type: ignore[explicit-any]
     files_checksums: dict[str, str]
 
 

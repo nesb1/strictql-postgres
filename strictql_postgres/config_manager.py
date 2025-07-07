@@ -1,10 +1,10 @@
 import dataclasses
 import pathlib
+import tomllib
 from collections import defaultdict
 from typing import Literal, Mapping, TypeVar
 
 import pydantic
-import tomllib
 from pydantic import BaseModel, SecretStr
 
 from strictql_postgres.dataclass_error import Error
@@ -21,21 +21,21 @@ from strictql_postgres.string_in_snake_case import (
 )
 
 
-class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class ParsedDatabase(pydantic.BaseModel):  # type: ignore[explicit-any]
     env_name_to_read_connection_url: str
 
 
-class ParsedStrictqlSettings(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class ParsedStrictqlSettings(pydantic.BaseModel):  # type: ignore[explicit-any]
     query_files_path: list[str]
     code_generate_dir: str
     databases: dict[str, ParsedDatabase]
 
 
-class ParsedParameter(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class ParsedParameter(pydantic.BaseModel):  # type: ignore[explicit-any]
     is_optional: bool
 
 
-class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any]
     query: str
     parameter_names: dict[str, ParsedParameter] = {}
     database: str
@@ -43,15 +43,15 @@ class ParsedQueryToGenerate(pydantic.BaseModel):  # type: ignore[explicit-any,mi
     relative_path: str
 
 
-class QueryFileContentModel(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class QueryFileContentModel(pydantic.BaseModel):  # type: ignore[explicit-any]
     queries: dict[str, ParsedQueryToGenerate]
 
 
-class PyprojectTomlWithStrictQLToolSettings(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class PyprojectTomlWithStrictQLToolSettings(pydantic.BaseModel):  # type: ignore[explicit-any]
     strictql_postgres: ParsedStrictqlSettings
 
 
-class ParsedPyprojectTomlWithStrictQLSection(pydantic.BaseModel):  # type: ignore[explicit-any,misc]
+class ParsedPyprojectTomlWithStrictQLSection(pydantic.BaseModel):  # type: ignore[explicit-any]
     tool: PyprojectTomlWithStrictQLToolSettings
 
 

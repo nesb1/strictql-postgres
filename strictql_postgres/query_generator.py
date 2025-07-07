@@ -62,7 +62,7 @@ actual_param_names: {self.actual_params}
 }}"""
 
 
-class QueryToGenerate(BaseModel):  # type: ignore[explicit-any,misc]
+class QueryToGenerate(BaseModel):  # type: ignore[explicit-any]
     query: str
     function_name: StringInSnakeLowerCase
     params: dict[str, Parameter]
