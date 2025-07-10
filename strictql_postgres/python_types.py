@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import dataclasses
 import enum
 import pathlib
 from dataclasses import dataclass
-from typing import Literal, Mapping, Union
+from typing import Literal, Mapping, Union, Sequence, assert_never
 
 from mako.template import (  # type: ignore[import-untyped] # mako has not typing annotations
     Template,
@@ -19,9 +20,12 @@ class SimpleTypes(enum.Enum):
     FLOAT = "float"
     STR = "str"
     BYTES = "bytes"
+    OBJECT = "object"
 
 
-ALL_TYPES = Union["ListType", "SimpleType", "InnerModelType", "TypesWithImport"]
+ALL_TYPES = Union[
+    "ListType", "SimpleType", "InnerModelType", "TypesWithImport", "UnionType"
+]
 
 
 @dataclass
@@ -34,6 +38,11 @@ class SimpleType:
 class ListType:
     generic_type: ALL_TYPES
     is_optional: bool
+
+
+@dataclass
+class UnionType:
+    union_types: Sequence[ALL_TYPES]
 
 
 @dataclass
@@ -115,6 +124,7 @@ class GeneratedCodeWithModelDefinitions:
     imports: set[str]
     main_model_name: str
     models_code: set[str]
+    type_definitions: set[str] = dataclasses.field(default_factory=set)
 
 
 @dataclass(frozen=True)
@@ -122,6 +132,7 @@ class FormattedType:
     imports: set[str]
     models_code: set[str]
     type_: str
+    type_definitions: set[str] = dataclasses.field(default_factory=set)
 
 
 def format_simple_type(type_: SimpleType) -> str:
@@ -143,6 +154,7 @@ def generate_code_for_model_as_pydantic(
     imports = {Import(from_="pydantic", name="BaseModel").format()}
     fields = {}
     models: set[str] = set()
+    type_definitions: set[str] = set()
     for name, type_ in model_type.fields.items():
         if isinstance(type_, TypesWithImport):
             imports.add(Import(from_=type_.from_, name=type_.name).format())
@@ -162,6 +174,16 @@ def generate_code_for_model_as_pydantic(
             fields[name] = create_type_str(
                 type_=type_.model_type.name, is_optional=type_.is_optional
             )
+        elif isinstance(type_, RecursiveListType):
+            generated_code = generate_recursive_list_definition(type_)
+            imports.update(generated_code.imports)
+            models.update(generated_code.models_code)
+            fields[name] = create_type_str(
+                type_=generated_code.type_, is_optional=type_.is_optional
+            )
+            type_definitions.update(generated_code.type_definitions)
+        else:
+            raise NotImplementedError(type_)
 
     mako_template = (TEMPLATES_DIR / "pydantic_model.txt").read_text()
     model_code = (
@@ -172,7 +194,10 @@ def generate_code_for_model_as_pydantic(
     models.add(model_code)  # type: ignore [misc]
 
     return GeneratedCodeWithModelDefinitions(
-        imports=imports, models_code=models, main_model_name=model_type.name
+        imports=imports,
+        models_code=models,
+        main_model_name=model_type.name,
+        type_definitions=type_definitions,
     )
 
 
@@ -195,8 +220,46 @@ def format_type(type: ALL_TYPES) -> FormattedType:
             imports=generated_code.imports,
             models_code=generated_code.models_code,
             type_=type.model_type.name,
+            type_definitions=generated_code.type_definitions,
         )
+    if isinstance(type, RecursiveListType):
+        return generate_recursive_list_definition(t=type)
     raise NotImplementedError(type)
 
 
 FilesContentByPath = Mapping[pathlib.Path, str]
+
+
+@dataclasses.dataclass
+class RecursiveListType:
+    generic_type: ALL_TYPES
+    is_optional: bool
+
+
+def _get_type_name(type: SimpleType | TypesWithImport) -> str:
+    if isinstance(type, TypesWithImport):
+        return type.name
+    if isinstance(type, SimpleType):
+        return type.type_.value
+
+    assert_never(type)
+
+
+def generate_recursive_list_definition(t: RecursiveListType) -> FormattedType:
+    formatted_inner_type = format_type(t.generic_type)
+
+    type_name = f"RecursiveListOf{_get_type_name(t.generic_type).title()}"
+    return FormattedType(
+        imports={
+            *formatted_inner_type.imports,
+            "from typing import TypeAliasType",
+            "from typing import Union",
+        },
+        models_code={
+            *formatted_inner_type.models_code,
+        },
+        type_=type_name,
+        type_definitions={
+            f'{type_name} = TypeAliasType("{type_name}", "Union[list[{formatted_inner_type.type_}], list[{type_name}], None]")'
+        },
+    )

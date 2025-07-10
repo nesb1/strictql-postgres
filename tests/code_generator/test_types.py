@@ -15,6 +15,9 @@ from strictql_postgres.python_types import (
     format_simple_type,
     format_type_with_import,
     generate_code_for_model_as_pydantic,
+    generate_recursive_list_definition,
+    RecursiveListType,
+    FormattedType,
 )
 
 
@@ -138,3 +141,23 @@ class TestModel(BaseModel): # type: ignore[explicit-any]
         )
         == res
     )
+
+
+def test_generate_code_for_recursive_list():
+    actual = generate_recursive_list_definition(
+        t=RecursiveListType(
+            generic_type=SimpleType(type_=SimpleTypes.STR, is_optional=True),
+            is_optional=True,
+        )
+    )
+
+    expected = FormattedType(
+        imports={"from typing import Union", "from typing import TypeAliasType"},
+        models_code=set(),
+        type_="RecursiveListOfStr",
+        type_definitions={
+            'RecursiveListOfStr = TypeAliasType("RecursiveListOfStr", "Union[list[str | None], list[RecursiveListOfStr], None]")'
+        },
+    )
+
+    assert actual == expected

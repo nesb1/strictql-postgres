@@ -18,57 +18,67 @@ from strictql_postgres.python_types import (
     TimeDeltaType,
     TimeType,
     TypesWithImport,
+    ALL_TYPES,
+    ListType,
+    UnionType,
 )
 from strictql_postgres.supported_postgres_types import (
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
+    ALL_SUPPORTED_TYPES,
 )
 
 
 @dataclasses.dataclass
 class SimpleTypeTestData:
     query_literal: str
-    expected_python_type: SimpleTypes
+    expected_python_type: SimpleType
 
 
 TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
     SupportedPostgresSimpleTypes.SMALLINT: SimpleTypeTestData(
         query_literal="(1::smallint)",
-        expected_python_type=SimpleTypes.INT,
+        expected_python_type=SimpleType(type_=SimpleTypes.INT, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.INTEGER: SimpleTypeTestData(
         query_literal="(1::integer)",
-        expected_python_type=SimpleTypes.INT,
+        expected_python_type=SimpleType(type_=SimpleTypes.INT, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.BIGINT: SimpleTypeTestData(
         query_literal="(1::bigint)",
-        expected_python_type=SimpleTypes.INT,
+        expected_python_type=SimpleType(type_=SimpleTypes.INT, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.REAL: SimpleTypeTestData(
         query_literal="(1::real)",
-        expected_python_type=SimpleTypes.FLOAT,
+        expected_python_type=SimpleType(type_=SimpleTypes.FLOAT, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.DOUBLE_PRECISION: SimpleTypeTestData(
         query_literal="(123::double precision)",
-        expected_python_type=SimpleTypes.FLOAT,
+        expected_python_type=SimpleType(type_=SimpleTypes.FLOAT, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.VARCHAR: SimpleTypeTestData(
-        query_literal="('text'::varchar)", expected_python_type=SimpleTypes.STR
+        query_literal="('text'::varchar)",
+        expected_python_type=SimpleType(type_=SimpleTypes.STR, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.CHAR: SimpleTypeTestData(
-        query_literal="('text'::char)", expected_python_type=SimpleTypes.STR
+        query_literal="('text'::char)",
+        expected_python_type=SimpleType(type_=SimpleTypes.STR, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.BPCHAR: SimpleTypeTestData(
-        query_literal="('text'::bpchar)", expected_python_type=SimpleTypes.STR
+        query_literal="('text'::bpchar)",
+        expected_python_type=SimpleType(type_=SimpleTypes.STR, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.TEXT: SimpleTypeTestData(
-        query_literal="('text'::text)", expected_python_type=SimpleTypes.STR
+        query_literal="('text'::text)",
+        expected_python_type=SimpleType(type_=SimpleTypes.STR, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.BOOL: SimpleTypeTestData(
-        query_literal="TRUE", expected_python_type=SimpleTypes.BOOL
+        query_literal="TRUE",
+        expected_python_type=SimpleType(type_=SimpleTypes.BOOL, is_optional=True),
     ),
     SupportedPostgresSimpleTypes.BYTES: SimpleTypeTestData(
-        query_literal="('kek'::bytea)", expected_python_type=SimpleTypes.BYTES
+        query_literal="('kek'::bytea)",
+        expected_python_type=SimpleType(type_=SimpleTypes.BYTES, is_optional=True),
     ),
 }
 
@@ -86,7 +96,7 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestDat
 async def test_get_pg_response_schema_from_prepared_statement_when_simple_type(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
-    expected_python_type: SimpleTypes,
+    expected_python_type: SimpleType,
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         prepared_stmt = await connection.prepare(
@@ -95,7 +105,7 @@ async def test_get_pg_response_schema_from_prepared_statement_when_simple_type(
         assert get_pg_response_schema_from_prepared_statement(
             prepared_stmt=prepared_stmt,
         ) == {
-            "value": SimpleType(type_=expected_python_type, is_optional=True),
+            "value": expected_python_type,
         }
 
 
@@ -110,37 +120,45 @@ TEST_DATA_FOR_TYPES_REQUIRED_IMPORT: dict[
 ] = {
     SupportedPostgresTypeRequiredImports.NUMERIC: TypeRequiredImportTestData(
         query_literal="(123::numeric)",
-        expected_python_type=DecimalType,
+        expected_python_type=DecimalType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.DECIMAL: TypeRequiredImportTestData(
         query_literal="(123::decimal)",
-        expected_python_type=DecimalType,
+        expected_python_type=DecimalType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.DATE: TypeRequiredImportTestData(
         query_literal="(now()::date)",
-        expected_python_type=DateType,
+        expected_python_type=DateType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.TIME: TypeRequiredImportTestData(
         query_literal="(now()::time)",
-        expected_python_type=TimeType,
+        expected_python_type=TimeType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.TIMETZ: TypeRequiredImportTestData(
         query_literal="(now()::timetz)",
-        expected_python_type=TimeType,
+        expected_python_type=TimeType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeRequiredImportTestData(
         query_literal="(now()::timestamp without time zone)",
-        expected_python_type=DateTimeType,
+        expected_python_type=DateTimeType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeRequiredImportTestData(
         query_literal="(now()::timestamp with time zone)",
-        expected_python_type=DateTimeType,
+        expected_python_type=DateTimeType(is_optional=True),
     ),
     SupportedPostgresTypeRequiredImports.INTERVAL: TypeRequiredImportTestData(
         query_literal="('1 year'::interval)",
-        expected_python_type=TimeDeltaType,
+        expected_python_type=TimeDeltaType(is_optional=True),
     ),
 }
+
+
+TEST_DATA_TYPES_FOR_ALL_TYPES: dict[
+    SupportedPostgresSimpleTypes | SupportedPostgresTypeRequiredImports,
+    TypeRequiredImportTestData | SimpleTypeTestData,
+] = (
+    TEST_DATA_FOR_TYPES_REQUIRED_IMPORT | TEST_DATA_FOR_SIMPLE_TYPES
+)
 
 
 @pytest.mark.parametrize(
@@ -208,3 +226,55 @@ async def test_raise_error_if_response_schema_contains_not_unique_columns(
         assert error.value.error == PgResponseSchemaContainsColumnsWithNotUniqueNames(
             column_names=["value", "value"], not_unique_column_names={"value"}
         )
+
+
+class Model:
+    v: list[int] | list[list[int]]
+
+
+@pytest.mark.parametrize("array_dimension", [1, 3, 10])
+@pytest.mark.parametrize(
+    ("query_literal", "expected_python_type"),
+    [
+        (
+            (TEST_DATA_TYPES_FOR_ALL_TYPES[type_].query_literal),
+            (TEST_DATA_TYPES_FOR_ALL_TYPES[type_].expected_python_type),
+        )
+        for type_ in ALL_SUPPORTED_TYPES
+    ],
+)
+async def test_array(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    query_literal: str,
+    array_dimension: int,
+    expected_python_type: type[ALL_TYPES],
+) -> None:
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+
+        start = "".join(["ARRAY[" for _ in range(array_dimension)])
+
+        end = "".join(["]" for _ in range(array_dimension)])
+        prepared_stmt = await connection.prepare(
+            f"select {start}{query_literal}{end} as value"
+        )
+
+        pg_response_schema = get_pg_response_schema_from_prepared_statement(
+            prepared_stmt=prepared_stmt
+        )
+
+        assert pg_response_schema == {
+            "value": ListType(
+                generic_type=UnionType(
+                    union_types=[
+                        expected_python_type,
+                        ListType(
+                            generic_type=SimpleType(
+                                type_=SimpleTypes.OBJECT, is_optional=True
+                            ),
+                            is_optional=True,
+                        ),
+                    ]
+                ),
+                is_optional=True,
+            ),
+        }
