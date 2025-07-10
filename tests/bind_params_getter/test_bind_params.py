@@ -61,14 +61,23 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestDat
     SupportedPostgresSimpleTypes.TEXT: SimpleTypeTestData(
         bind_param_cast="text", expected_python_type=SimpleTypes.STR
     ),
+    SupportedPostgresSimpleTypes.BOOL: SimpleTypeTestData(
+        bind_param_cast="boolean", expected_python_type=SimpleTypes.BOOL
+    ),
+    SupportedPostgresSimpleTypes.BYTES: SimpleTypeTestData(
+        bind_param_cast="bytea", expected_python_type=SimpleTypes.BYTES
+    ),
 }
 
 
 @pytest.mark.parametrize(
     ("query_literal", "expected_python_type"),
     [
-        (test_case.bind_param_cast, test_case.expected_python_type)
-        for postgres_type, test_case in TEST_DATA_FOR_SIMPLE_TYPES.items()
+        (
+            TEST_DATA_FOR_SIMPLE_TYPES[supported_type].bind_param_cast,
+            TEST_DATA_FOR_SIMPLE_TYPES[supported_type].expected_python_type,
+        )
+        for supported_type in SupportedPostgresSimpleTypes
     ],
 )
 async def test_get_bind_params_types_for_simple_types(
@@ -143,7 +152,7 @@ TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
         for data_type in SupportedPostgresTypeRequiredImports
     ],
 )
-async def test_generate_code_and_execute_for_types_with_import_in_response_model(
+async def test_bind_params_for_types_with_import(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     bind_param_cast: str,
     param: type[TypesWithImport],

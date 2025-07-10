@@ -59,6 +59,12 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, TypeTestData] = {
     SupportedPostgresSimpleTypes.TEXT: TypeTestData(
         query_literal="('text'::text)", expected_python_value="text"
     ),
+    SupportedPostgresSimpleTypes.BOOL: TypeTestData(
+        query_literal="(TRUE)", expected_python_value=True
+    ),
+    SupportedPostgresSimpleTypes.BYTES: TypeTestData(
+        query_literal="('123'::bytea)", expected_python_value="123".encode("utf-8")
+    ),
 }
 
 
