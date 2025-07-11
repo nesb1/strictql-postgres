@@ -21,11 +21,12 @@ from strictql_postgres.python_types import (
     ALL_TYPES,
     ListType,
     UnionType,
+    RecursiveListType,
 )
 from strictql_postgres.supported_postgres_types import (
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
-    ALL_SUPPORTED_TYPES,
+    ALL_SUPPORTED_POSTGRES_TYPES,
 )
 
 
@@ -240,7 +241,7 @@ class Model:
             (TEST_DATA_TYPES_FOR_ALL_TYPES[type_].query_literal),
             (TEST_DATA_TYPES_FOR_ALL_TYPES[type_].expected_python_type),
         )
-        for type_ in ALL_SUPPORTED_TYPES
+        for type_ in ALL_SUPPORTED_POSTGRES_TYPES
     ],
 )
 async def test_array(
@@ -263,18 +264,20 @@ async def test_array(
         )
 
         assert pg_response_schema == {
-            "value": ListType(
-                generic_type=UnionType(
-                    union_types=[
-                        expected_python_type,
-                        ListType(
-                            generic_type=SimpleType(
-                                type_=SimpleTypes.OBJECT, is_optional=True
-                            ),
-                            is_optional=True,
-                        ),
-                    ]
-                ),
-                is_optional=True,
-            ),
+            "value": RecursiveListType(
+                generic_type=expected_python_type, is_optional=True
+            )
+            #     generic_type=UnionType(
+            #         union_types=[
+            #             expected_python_type,
+            #             ListType(
+            #                 generic_type=SimpleType(
+            #                     type_=SimpleTypes.OBJECT, is_optional=True
+            #                 ),
+            #                 is_optional=True,
+            #             ),
+            #         ]
+            #     ),
+            #     is_optional=True,
+            # ),
         }

@@ -11,6 +11,7 @@ from strictql_postgres.python_types import (
     ListType,
     UnionType,
     SimpleTypes,
+    RecursiveListType,
 )
 from strictql_postgres.supported_postgres_types import (
     PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,
@@ -110,20 +111,11 @@ def get_pg_response_schema_from_prepared_statement(
                     type_=python_simple_type, is_optional=True
                 )
                 continue
-            pg_response_schema[attribute.name] = ListType(
-                generic_type=UnionType(
-                    union_types=[
-                        SimpleType(type_=python_simple_type, is_optional=True),
-                        ListType(
-                            generic_type=SimpleType(
-                                SimpleTypes.OBJECT, is_optional=True
-                            ),
-                            is_optional=True,
-                        ),
-                    ]
-                ),
+            pg_response_schema[attribute.name] = RecursiveListType(
+                generic_type=SimpleType(type_=python_simple_type, is_optional=True),
                 is_optional=True,
             )
+
             continue
 
         type_with_import = PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT.get(
@@ -134,19 +126,8 @@ def get_pg_response_schema_from_prepared_statement(
             if not is_array:
                 pg_response_schema[attribute.name] = type_with_import(is_optional=True)
                 continue
-            pg_response_schema[attribute.name] = ListType(
-                generic_type=UnionType(
-                    union_types=[
-                        type_with_import(is_optional=True),
-                        ListType(
-                            generic_type=SimpleType(
-                                type_=SimpleTypes.OBJECT, is_optional=True
-                            ),
-                            is_optional=True,
-                        ),
-                    ]
-                ),
-                is_optional=True,
+            pg_response_schema[attribute.name] = RecursiveListType(
+                generic_type=type_with_import(is_optional=True), is_optional=True
             )
             continue
 

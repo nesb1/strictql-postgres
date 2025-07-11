@@ -6,6 +6,7 @@ import pathlib
 from dataclasses import dataclass
 from typing import Literal, Mapping, Union, Sequence, assert_never
 
+import pytest
 from mako.template import (  # type: ignore[import-untyped] # mako has not typing annotations
     Template,
 )
@@ -24,7 +25,11 @@ class SimpleTypes(enum.Enum):
 
 
 ALL_TYPES = Union[
-    "ListType", "SimpleType", "InnerModelType", "TypesWithImport", "UnionType"
+    "SimpleType",
+    "InnerModelType",
+    "TypesWithImport",
+    "UnionType",
+    "RecursiveListType",
 ]
 
 
@@ -102,6 +107,8 @@ class ClassType:
 
 INT_TYPE = SimpleType(type_=SimpleTypes.INT, is_optional=True)
 LIST_OF_INTS = ListType(INT_TYPE, is_optional=True)
+
+RecursiveListSupportedTypes = Union[SimpleType, TypesWithImport]
 
 
 @dataclass(frozen=True)
@@ -232,15 +239,19 @@ FilesContentByPath = Mapping[pathlib.Path, str]
 
 @dataclasses.dataclass
 class RecursiveListType:
-    generic_type: ALL_TYPES
+    generic_type: RecursiveListSupportedTypes
     is_optional: bool
 
 
 def _get_type_name(type: SimpleType | TypesWithImport) -> str:
     if isinstance(type, TypesWithImport):
-        return type.name
+        if not type.is_optional:
+            return type.name.title()
+        return f"Optional{type.name.title()}"
     if isinstance(type, SimpleType):
-        return type.type_.value
+        if not type.is_optional:
+            return type.type_.value.title()
+        return f"Optional{type.type_.value.title()}"
 
     assert_never(type)
 
@@ -248,7 +259,9 @@ def _get_type_name(type: SimpleType | TypesWithImport) -> str:
 def generate_recursive_list_definition(t: RecursiveListType) -> FormattedType:
     formatted_inner_type = format_type(t.generic_type)
 
-    type_name = f"RecursiveListOf{_get_type_name(t.generic_type).title()}"
+    type_name = f"RecursiveListOf{_get_type_name(t.generic_type)}"
+    if t.is_optional:
+        type_name = f"Optional{type_name}"
     return FormattedType(
         imports={
             *formatted_inner_type.imports,
@@ -260,6 +273,6 @@ def generate_recursive_list_definition(t: RecursiveListType) -> FormattedType:
         },
         type_=type_name,
         type_definitions={
-            f'{type_name} = TypeAliasType("{type_name}", "Union[list[{formatted_inner_type.type_}], list[{type_name}], None]")'
+            f'{type_name} = TypeAliasType("{type_name}", "Union[list[{formatted_inner_type.type_}], list[{type_name}]{", None" if t.is_optional else ""}]")'
         },
     )
