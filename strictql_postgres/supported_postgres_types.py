@@ -64,10 +64,9 @@ PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
 }
 
 
-ALL_SUPPORTED_POSTGRES_TYPES: set[SupportedPostgresSimpleTypes | SimpleTypes] = {
-    *{simple_type for simple_type in SupportedPostgresSimpleTypes},
-    *{
-        type_required_import
-        for type_required_import in SupportedPostgresTypeRequiredImports
-    },
+ALL_SUPPORTED_POSTGRES_TYPES: set[
+    SupportedPostgresSimpleTypes | SupportedPostgresTypeRequiredImports
+] = {simple_type for simple_type in SupportedPostgresSimpleTypes} | {
+    type_required_import
+    for type_required_import in SupportedPostgresTypeRequiredImports
 }

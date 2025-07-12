@@ -130,6 +130,7 @@ async def generate_code_for_query_with_fetch_all_method(
             model_name=formatted_type.type_,
             function_name=function_name.value,
             models=formatted_type.models_code,
+            type_definitions=formatted_type.type_definitions,
             query=query,
             params=[],
         )
@@ -154,6 +155,7 @@ async def generate_code_for_query_with_fetch_all_method(
             model_name=model_type.name,
             query=query,
             params=formatted_bind_params,
+            type_definitions=formatted_type.type_definitions,
         )
 
     try:

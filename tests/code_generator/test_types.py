@@ -7,9 +7,12 @@ from strictql_postgres.python_types import (
     DateTimeType,
     DateType,
     DecimalType,
+    FormattedType,
     GeneratedCodeWithModelDefinitions,
     InnerModelType,
     ModelType,
+    RecursiveListSupportedTypes,
+    RecursiveListType,
     SimpleType,
     SimpleTypes,
     TimeDeltaType,
@@ -19,11 +22,7 @@ from strictql_postgres.python_types import (
     format_type_with_import,
     generate_code_for_model_as_pydantic,
     generate_recursive_list_definition,
-    RecursiveListType,
-    FormattedType,
-    RecursiveListSupportedTypes,
 )
-from strictql_postgres.supported_postgres_types import ALL_SUPPORTED_POSTGRES_TYPES
 
 
 @pytest.mark.parametrize(
@@ -56,7 +55,7 @@ class TestDataForTypesWithImport:
 
 
 TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
-    type[TypesWithImport] : dict[bool, TestDataForTypesWithImport]
+    type[TypesWithImport], dict[bool, TestDataForTypesWithImport]
 ] = {
     DecimalType: {
         True: TestDataForTypesWithImport(
@@ -95,14 +94,14 @@ TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
 
 @pytest.mark.parametrize(
     ("type_with_import", "expected_import", "expected_type"),
-    [
-        (
-            data_type(is_optional),
+    [  # type: ignore[misc]
+        (  # type: ignore[misc]
+            data_type(is_optional),  # type: ignore[misc]
             test_data.import_,
             test_data.formatted_type,
         )
-        for data_type in typing.get_args(TypesWithImport)
-        for is_optional, test_data in TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].items()
+        for data_type in typing.get_args(TypesWithImport)  # type: ignore[misc]
+        for is_optional, test_data in TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].items()  # type: ignore[misc]
     ],
 )
 def test_format_types_with_import(
@@ -127,6 +126,10 @@ def test_format_model_as_pydantic_model() -> None:
             "with_import": DateType(
                 is_optional=True,
             ),
+            "recursive_list": RecursiveListType(
+                generic_type=SimpleType(type_=SimpleTypes.BOOL, is_optional=True),
+                is_optional=True,
+            ),
         },
     )
     res = generate_code_for_model_as_pydantic(
@@ -135,6 +138,10 @@ def test_format_model_as_pydantic_model() -> None:
             fields={
                 "text_field": SimpleType(type_=SimpleTypes.STR, is_optional=True),
                 "with_import": TimeType(
+                    is_optional=True,
+                ),
+                "recursive_list": RecursiveListType(
+                    generic_type=SimpleType(type_=SimpleTypes.INT, is_optional=True),
                     is_optional=True,
                 ),
                 "inner_optional": InnerModelType(
@@ -149,13 +156,16 @@ def test_format_model_as_pydantic_model() -> None:
         )
     )
     inner_model_code = """
+
 class InnerModel(BaseModel): # type: ignore[explicit-any]
     field: str | None
-    with_import: date | None"""
+    with_import: date | None
+    recursive_list: OptionalRecursiveListOfOptionalBool"""
     test_model_code = """
 class TestModel(BaseModel): # type: ignore[explicit-any]
     text_field: str | None
     with_import: time | None
+    recursive_list: OptionalRecursiveListOfOptionalInt
     inner_optional: InnerModel | None
     inner: InnerModel"""
 
@@ -165,9 +175,14 @@ class TestModel(BaseModel): # type: ignore[explicit-any]
                 "from pydantic import BaseModel",
                 "from datetime import time",
                 "from datetime import date",
+                "from typing import Union",
+                "from typing import TypeAliasType",
             },
             main_model_name="TestModel",
             models_code={inner_model_code.strip(), test_model_code.strip()},
+            type_definitions={
+                'OptionalRecursiveListOfOptionalInt = TypeAliasType("OptionalRecursiveListOfOptionalInt", Union[list[int | None], list["OptionalRecursiveListOfOptionalInt"], None])'
+            },
         )
         == res
     )
@@ -177,7 +192,7 @@ RECURSIVE_LIST_TYPE_IMPORTS = {
     "from typing import Union",
     "from typing import TypeAliasType",
 }
-RECURSIVE_LIST_TYPE_MODELS_CODE = set()
+RECURSIVE_LIST_TYPE_MODELS_CODE: set[str] = set()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -199,7 +214,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="OptionalRecursiveListOfOptionalStr",
                 type_definitions={
-                    'OptionalRecursiveListOfOptionalStr = TypeAliasType("OptionalRecursiveListOfOptionalStr", "Union[list[str | None], list[OptionalRecursiveListOfOptionalStr], None]")'
+                    'OptionalRecursiveListOfOptionalStr = TypeAliasType("OptionalRecursiveListOfOptionalStr", Union[list[str | None], list["OptionalRecursiveListOfOptionalStr"], None])'
                 },
             ),
             is_optional=True,
@@ -211,7 +226,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="OptionalRecursiveListOfStr",
                 type_definitions={
-                    'OptionalRecursiveListOfStr = TypeAliasType("OptionalRecursiveListOfStr", "Union[list[str], list[OptionalRecursiveListOfStr], None]")'
+                    'OptionalRecursiveListOfStr = TypeAliasType("OptionalRecursiveListOfStr", Union[list[str], list["OptionalRecursiveListOfStr"], None])'
                 },
             ),
             is_optional=True,
@@ -223,7 +238,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="RecursiveListOfOptionalStr",
                 type_definitions={
-                    'RecursiveListOfOptionalStr = TypeAliasType("RecursiveListOfOptionalStr", "Union[list[str | None], list[RecursiveListOfOptionalStr]]")'
+                    'RecursiveListOfOptionalStr = TypeAliasType("RecursiveListOfOptionalStr", Union[list[str | None], list["RecursiveListOfOptionalStr"]])'
                 },
             ),
             is_optional=False,
@@ -235,7 +250,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="RecursiveListOfStr",
                 type_definitions={
-                    'RecursiveListOfStr = TypeAliasType("RecursiveListOfStr", "Union[list[str], list[RecursiveListOfStr]]")'
+                    'RecursiveListOfStr = TypeAliasType("RecursiveListOfStr", Union[list[str], list["RecursiveListOfStr"]])'
                 },
             ),
             is_optional=False,
@@ -247,7 +262,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="OptionalRecursiveListOfOptionalInt",
                 type_definitions={
-                    'OptionalRecursiveListOfOptionalInt = TypeAliasType("OptionalRecursiveListOfOptionalInt", "Union[list[int | None], list[OptionalRecursiveListOfOptionalInt], None]")'
+                    'OptionalRecursiveListOfOptionalInt = TypeAliasType("OptionalRecursiveListOfOptionalInt", Union[list[int | None], list["OptionalRecursiveListOfOptionalInt"], None])'
                 },
             ),
             is_optional=True,
@@ -259,7 +274,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="OptionalRecursiveListOfInt",
                 type_definitions={
-                    'OptionalRecursiveListOfInt = TypeAliasType("OptionalRecursiveListOfInt", "Union[list[int], list[OptionalRecursiveListOfInt], None]")'
+                    'OptionalRecursiveListOfInt = TypeAliasType("OptionalRecursiveListOfInt", Union[list[int], list["OptionalRecursiveListOfInt"], None])'
                 },
             ),
             is_optional=True,
@@ -271,7 +286,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="RecursiveListOfOptionalInt",
                 type_definitions={
-                    'RecursiveListOfOptionalInt = TypeAliasType("RecursiveListOfOptionalInt", "Union[list[int | None], list[RecursiveListOfOptionalInt]]")'
+                    'RecursiveListOfOptionalInt = TypeAliasType("RecursiveListOfOptionalInt", Union[list[int | None], list["RecursiveListOfOptionalInt"]])'
                 },
             ),
             is_optional=False,
@@ -283,7 +298,7 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
                 models_code=RECURSIVE_LIST_TYPE_MODELS_CODE,
                 type_="RecursiveListOfInt",
                 type_definitions={
-                    'RecursiveListOfInt = TypeAliasType("RecursiveListOfInt", "Union[list[int], list[RecursiveListOfInt]]")'
+                    'RecursiveListOfInt = TypeAliasType("RecursiveListOfInt", Union[list[int], list["RecursiveListOfInt"]])'
                 },
             ),
             is_optional=False,
@@ -293,7 +308,8 @@ TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR: dict[
 
 
 def test_data_for_recursive_list_fullness() -> None:
-    for data_type in typing.get_args(RecursiveListSupportedTypes):
+    data_type: type[RecursiveListSupportedTypes]
+    for data_type in typing.get_args(RecursiveListSupportedTypes):  # type: ignore[misc]
         if issubclass(data_type, SimpleType):
             if data_type not in TEST_DATA_FOR_TEST_RECURSIVE_LIST_CODE_GENERATOR:
                 pytest.fail(f"Type: {data_type} not exists in test data")
@@ -350,7 +366,8 @@ def test_data_for_recursive_list_fullness() -> None:
                     False: False,
                 },
             }
-            for type_with_import in typing.get_args(TypesWithImport):
+            type_with_import: type[TypesWithImport]
+            for type_with_import in typing.get_args(TypesWithImport):  # type: ignore[misc]
                 for case in cases:
                     if isinstance(case.type_, type_with_import):
                         found_type = True
@@ -388,7 +405,7 @@ def test_generate_code_for_recursive_list(
     inner_type: RecursiveListSupportedTypes,
     expected_formatted_type: FormattedType,
     is_optional: bool,
-):
+) -> None:
     actual = generate_recursive_list_definition(
         t=RecursiveListType(generic_type=inner_type, is_optional=is_optional)
     )

@@ -7,11 +7,8 @@ import asyncpg.prepared_stmt
 from strictql_postgres.common_types import ColumnType
 from strictql_postgres.python_types import (
     ALL_TYPES,
-    SimpleType,
-    ListType,
-    UnionType,
-    SimpleTypes,
     RecursiveListType,
+    SimpleType,
 )
 from strictql_postgres.supported_postgres_types import (
     PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,

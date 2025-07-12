@@ -4,9 +4,8 @@ import dataclasses
 import enum
 import pathlib
 from dataclasses import dataclass
-from typing import Literal, Mapping, Union, Sequence, assert_never
+from typing import Literal, Mapping, Sequence, Union, assert_never
 
-import pytest
 from mako.template import (  # type: ignore[import-untyped] # mako has not typing annotations
     Template,
 )
@@ -28,7 +27,6 @@ ALL_TYPES = Union[
     "SimpleType",
     "InnerModelType",
     "TypesWithImport",
-    "UnionType",
     "RecursiveListType",
 ]
 
@@ -182,13 +180,11 @@ def generate_code_for_model_as_pydantic(
                 type_=type_.model_type.name, is_optional=type_.is_optional
             )
         elif isinstance(type_, RecursiveListType):
-            generated_code = generate_recursive_list_definition(type_)
-            imports.update(generated_code.imports)
-            models.update(generated_code.models_code)
-            fields[name] = create_type_str(
-                type_=generated_code.type_, is_optional=type_.is_optional
-            )
-            type_definitions.update(generated_code.type_definitions)
+            recursive_list_code = generate_recursive_list_definition(type_)
+            imports.update(recursive_list_code.imports)
+            models.update(recursive_list_code.models_code)
+            fields[name] = recursive_list_code.type_
+            type_definitions.update(recursive_list_code.type_definitions)
         else:
             raise NotImplementedError(type_)
 
@@ -273,6 +269,6 @@ def generate_recursive_list_definition(t: RecursiveListType) -> FormattedType:
         },
         type_=type_name,
         type_definitions={
-            f'{type_name} = TypeAliasType("{type_name}", "Union[list[{formatted_inner_type.type_}], list[{type_name}]{", None" if t.is_optional else ""}]")'
+            f'{type_name} = TypeAliasType("{type_name}", Union[list[{formatted_inner_type.type_}], list["{type_name}"]{", None" if t.is_optional else ""}])'
         },
     )

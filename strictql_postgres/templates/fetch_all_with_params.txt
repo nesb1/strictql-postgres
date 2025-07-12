@@ -2,6 +2,10 @@
 ${import_}
 % endfor
 
+% for type_definition in type_definitions:
+${type_definition}
+% endfor
+
 % for model in models:
 ${model}
 % endfor

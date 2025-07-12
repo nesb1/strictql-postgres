@@ -13,20 +13,18 @@ from strictql_postgres.python_types import (
     DateTimeType,
     DateType,
     DecimalType,
+    RecursiveListSupportedTypes,
+    RecursiveListType,
     SimpleType,
     SimpleTypes,
     TimeDeltaType,
     TimeType,
     TypesWithImport,
-    ALL_TYPES,
-    ListType,
-    UnionType,
-    RecursiveListType,
 )
 from strictql_postgres.supported_postgres_types import (
+    ALL_SUPPORTED_POSTGRES_TYPES,
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
-    ALL_SUPPORTED_POSTGRES_TYPES,
 )
 
 
@@ -113,7 +111,7 @@ async def test_get_pg_response_schema_from_prepared_statement_when_simple_type(
 @dataclasses.dataclass
 class TypeRequiredImportTestData:
     query_literal: str
-    expected_python_type: type[TypesWithImport]
+    expected_python_type: TypesWithImport
 
 
 TEST_DATA_FOR_TYPES_REQUIRED_IMPORT: dict[
@@ -175,7 +173,7 @@ TEST_DATA_TYPES_FOR_ALL_TYPES: dict[
 async def test_get_pg_response_schema_from_prepared_statement_when_type_required_import(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
-    expected_python_type: type[TypesWithImport],
+    expected_python_type: TypesWithImport,
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         prepared_stmt = await connection.prepare(
@@ -184,7 +182,7 @@ async def test_get_pg_response_schema_from_prepared_statement_when_type_required
         assert get_pg_response_schema_from_prepared_statement(
             prepared_stmt=prepared_stmt,
         ) == {
-            "value": expected_python_type(is_optional=True),
+            "value": expected_python_type,
         }
 
 
@@ -248,10 +246,9 @@ async def test_array(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
     array_dimension: int,
-    expected_python_type: type[ALL_TYPES],
+    expected_python_type: RecursiveListSupportedTypes,
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
-
         start = "".join(["ARRAY[" for _ in range(array_dimension)])
 
         end = "".join(["]" for _ in range(array_dimension)])
@@ -267,17 +264,4 @@ async def test_array(
             "value": RecursiveListType(
                 generic_type=expected_python_type, is_optional=True
             )
-            #     generic_type=UnionType(
-            #         union_types=[
-            #             expected_python_type,
-            #             ListType(
-            #                 generic_type=SimpleType(
-            #                     type_=SimpleTypes.OBJECT, is_optional=True
-            #                 ),
-            #                 is_optional=True,
-            #             ),
-            #         ]
-            #     ),
-            #     is_optional=True,
-            # ),
         }
