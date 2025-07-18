@@ -11,6 +11,7 @@ from strictql_postgres.python_types import (
     DecimalType,
     Float,
     Integer,
+    Json,
     SimpleTypes,
     String,
     TimeDeltaType,
@@ -165,6 +166,28 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[
                 expected_python_type=bytes,
             ),
             simple_type=Bytes,
+        )
+    ],
+    SupportedPostgresSimpleTypes.JSONB: [
+        SimpleTypeTestData(
+            test_data=TypeTestData(
+                cast_str="jsonb",
+                postgres_value_as_str='\'{"key":"value"}\'',
+                expected_python_value='{"key": "value"}',
+                expected_python_type=str,
+            ),
+            simple_type=Json,
+        )
+    ],
+    SupportedPostgresSimpleTypes.JSON: [
+        SimpleTypeTestData(
+            test_data=TypeTestData(
+                cast_str="json",
+                postgres_value_as_str='\'{"key":"value"}\'',
+                expected_python_value='{"key":"value"}',
+                expected_python_type=str,
+            ),
+            simple_type=Json,
         )
     ],
 }

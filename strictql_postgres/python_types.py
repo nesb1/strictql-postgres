@@ -46,7 +46,12 @@ class Bytes:
     is_optional: bool
 
 
-SimpleTypes = Bool | String | Integer | Float | Bool | Bytes
+@dataclasses.dataclass()
+class Json:
+    is_optional: bool
+
+
+SimpleTypes = Bool | String | Integer | Float | Bool | Bytes | Json
 
 
 @dataclass
@@ -143,9 +148,11 @@ def format_simple_type(type_: SimpleTypes) -> str:
             type_name = "bytes"
         case Bool():
             type_name = "bool"
+        case Json():
+            type_name = "str"
         case _:
             typing.assert_never(type_)
-    if not type_.is_optional:
+    if not type_.is_optional or type_name == "object":
         return type_name
     return f"{type_name} | None"
 

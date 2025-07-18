@@ -15,6 +15,7 @@ from strictql_postgres.python_types import (
     GeneratedCodeWithModelDefinitions,
     InnerModelType,
     Integer,
+    Json,
     ModelType,
     RecursiveListSupportedTypes,
     RecursiveListType,
@@ -36,6 +37,12 @@ NAME_BY_SIMPLE_TYPE: dict[type[SimpleTypes], str] = {
     Integer: "int",
     Float: "float",
     Bytes: "bytes",
+    Json: "str",
+}
+
+OPTIONAL_NAME_BY_SIMPLE_TYPE: dict[type[SimpleTypes], str] = {
+    type_: name if name == "object" else f"{name} | None"
+    for type_, name in NAME_BY_SIMPLE_TYPE.items()
 }
 
 
@@ -52,7 +59,7 @@ NAME_BY_SIMPLE_TYPE: dict[type[SimpleTypes], str] = {
         *[  # type: ignore[misc]
             (
                 simple_type(is_optional=True),  # type: ignore[misc]
-                f"{NAME_BY_SIMPLE_TYPE[simple_type]} | None",  # type: ignore[misc]
+                OPTIONAL_NAME_BY_SIMPLE_TYPE[simple_type],  # type: ignore[misc]
             )
             for simple_type in typing.get_args(SimpleTypes)  # type: ignore[misc]
         ],

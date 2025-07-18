@@ -122,15 +122,18 @@ async def select_1(
 | `interval`    | `datetime.timedelta` |
 | `timestamp`   | `datetime.datetime`  |
 | `timestamptz` | `datetime.datetime`  |
-
+| `jsonb`       | `str`                |
+| `json`        | `str`                |
 
 ### Arrays
-An array option is also available for all supported data types. 
 
-However, postgres does not provide information about the dimension of the array at the stage of query preparation, since this information is dynamic.
+An array option is also available for all supported data types.
+
+However, postgres does not provide information about the dimension of the array at the stage of query preparation, since
+this information is dynamic.
 Therefore, the type in python looks like a large union in order to protect against errors.
 
-For example, postgres type `integer[]` maps to python type: 
+For example, postgres type `integer[]` maps to python type:
 
 ```value: list[int | None | list[int | None | list[int | None | object]]] | None```
 

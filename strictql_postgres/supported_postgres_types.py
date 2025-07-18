@@ -8,6 +8,7 @@ from strictql_postgres.python_types import (
     DecimalType,
     Float,
     Integer,
+    Json,
     SimpleTypes,
     String,
     TimeDeltaType,
@@ -28,6 +29,8 @@ class SupportedPostgresSimpleTypes(enum.Enum):
     TEXT = "text"
     BOOL = "bool"
     BYTEA = "bytea"
+    JSONB = "jsonb"
+    JSON = "json"
 
 
 class SupportedPostgresTypeRequiredImports(enum.Enum):
@@ -53,6 +56,8 @@ PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES: dict[str, type[SimpleTypes]] = {
     "text": String,
     "bool": Bool,
     "bytea": Bytes,
+    "jsonb": Json,
+    "json": Json,
 }
 
 PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
