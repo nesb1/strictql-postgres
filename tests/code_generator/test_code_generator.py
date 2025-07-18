@@ -12,7 +12,11 @@ from strictql_postgres.common_types import (
     BindParam,
     NotEmptyRowSchema,
 )
-from strictql_postgres.python_types import SimpleType, SimpleTypes
+from strictql_postgres.python_types import (
+    Integer,
+    SimpleTypes,
+    String,
+)
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 from tests.code_generator.expected_generated_code.fetch_all_with_bind_params import (
     FetchAllUsersModel as FetchAllUsersModelWithBindParams,
@@ -57,9 +61,9 @@ async def test_code_generator_fetch_all_without_bind_params(
     ).open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {
-        "id": SimpleType(SimpleTypes.INT, is_optional=True),
-        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    db_row_model: dict[str, SimpleTypes] = {
+        "id": Integer(is_optional=True),
+        "name": String(is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(
@@ -95,9 +99,9 @@ async def test_code_generator_pydantic_with_bind_params(
     with (EXPECTED_GENERATED_CODE_DIR / "fetch_all_with_bind_params.py").open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {
-        "id": SimpleType(SimpleTypes.INT, is_optional=True),
-        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    db_row_model: dict[str, SimpleTypes] = {
+        "id": Integer(is_optional=True),
+        "name": String(is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_all_method(
@@ -106,11 +110,11 @@ async def test_code_generator_pydantic_with_bind_params(
         bind_params=[
             BindParam(
                 name_in_function="id",
-                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+                type_=Integer(is_optional=True),
             ),
             BindParam(
                 name_in_function="name",
-                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+                type_=String(is_optional=True),
             ),
         ],
         function_name=StringInSnakeLowerCase("fetch_all_users"),
@@ -146,9 +150,9 @@ async def test_code_generator_fetch_row_without_bind_params(
     ).open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {
-        "id": SimpleType(SimpleTypes.INT, is_optional=True),
-        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    db_row_model: dict[str, SimpleTypes] = {
+        "id": Integer(is_optional=True),
+        "name": String(is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_row_method(
@@ -184,9 +188,9 @@ async def test_code_generator_fetch_row_pydantic_with_bind_params(
     with (EXPECTED_GENERATED_CODE_DIR / "fetch_row_with_bind_params.py").open() as file:
         expected_generated_code = file.read()
 
-    db_row_model = {
-        "id": SimpleType(SimpleTypes.INT, is_optional=True),
-        "name": SimpleType(type_=SimpleTypes.STR, is_optional=True),
+    db_row_model: dict[str, SimpleTypes] = {
+        "id": Integer(is_optional=True),
+        "name": String(is_optional=True),
     }
 
     actual_generated_code = await generate_code_for_query_with_fetch_row_method(
@@ -195,11 +199,11 @@ async def test_code_generator_fetch_row_pydantic_with_bind_params(
         bind_params=[
             BindParam(
                 name_in_function="id",
-                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+                type_=Integer(is_optional=True),
             ),
             BindParam(
                 name_in_function="name",
-                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+                type_=String(is_optional=True),
             ),
         ],
         function_name=StringInSnakeLowerCase("fetch_user"),
@@ -236,11 +240,11 @@ async def test_code_generator_execute_with_bind_params(
         bind_params=[
             BindParam(
                 name_in_function="id",
-                type_=SimpleType(SimpleTypes.INT, is_optional=True),
+                type_=Integer(is_optional=True),
             ),
             BindParam(
                 name_in_function="name",
-                type_=SimpleType(SimpleTypes.STR, is_optional=True),
+                type_=String(is_optional=True),
             ),
         ],
         function_name=StringInSnakeLowerCase("delete_users"),

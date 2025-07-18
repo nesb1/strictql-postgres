@@ -14,10 +14,8 @@ from strictql_postgres.pg_response_schema_getter import (
 )
 from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.query_generator import (
-    InvalidParamNames,
-    InvalidResponseSchemaError,
-    InvalidSqlQuery,
-    QueryToGenerate,
+    QueryPythonCodeGeneratorError,
+    QueryToGenerateInfo,
     generate_query_python_code,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -31,9 +29,9 @@ async def test_query_invalid(
 ) -> None:
     function_name = "fetch_all_test"
 
-    with pytest.raises(InvalidSqlQuery) as error:
+    with pytest.raises(QueryPythonCodeGeneratorError) as error:
         await generate_query_python_code(
-            query_to_generate=QueryToGenerate(
+            query_to_generate=QueryToGenerateInfo(
                 query=query,
                 function_name=StringInSnakeLowerCase(function_name),
                 params={},
@@ -41,9 +39,7 @@ async def test_query_invalid(
             ),
             connection_pool=asyncpg_connection_pool_to_test_db,
         )
-
-    assert "syntax error at or near" in error.value.postgres_error
-    assert error.value.query == query
+    assert "syntax error at or near" in error.value.error
 
 
 async def test_param_names_equals_query_bind_params(
@@ -53,7 +49,7 @@ async def test_param_names_equals_query_bind_params(
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query="select $1::integer as v1, $2::integer as v2",
             function_name=StringInSnakeLowerCase(function_name),
             params={
@@ -101,10 +97,10 @@ async def test_param_names_not_equals_query_bind_params(
 ) -> None:
     function_name = "fetch_all_test"
 
-    with pytest.raises(InvalidParamNames) as error:
+    with pytest.raises(QueryPythonCodeGeneratorError) as error:
         params = {parm_name: Parameter(is_optional=True) for parm_name in param_names}
         await generate_query_python_code(
-            query_to_generate=QueryToGenerate(
+            query_to_generate=QueryToGenerateInfo(
                 query=query,
                 function_name=StringInSnakeLowerCase(function_name),
                 params=params,
@@ -113,8 +109,10 @@ async def test_param_names_not_equals_query_bind_params(
             connection_pool=asyncpg_connection_pool_to_test_db,
         )
 
-    assert error.value.actual_params == params
-    assert error.value.expected_param_names_count == expected_param_names
+    assert (
+        error.value.error
+        == f"Query contains invalid param names count, expected param names count: `{expected_param_names}`, actual_params_count: `{len(params)}`"
+    )
 
 
 async def test_handle_response_schema_getter_error(
@@ -122,7 +120,7 @@ async def test_handle_response_schema_getter_error(
 ) -> None:
     function_name = "fetch_all_test"
 
-    with pytest.raises(InvalidResponseSchemaError) as error:
+    with pytest.raises(QueryPythonCodeGeneratorError) as error:
         schema_error = PgResponseSchemaTypeNotSupported(
             postgres_type="kek", column_name="test"
         )
@@ -131,7 +129,7 @@ async def test_handle_response_schema_getter_error(
             new=MagicMock(side_effect=PgResponseSchemaGetterError(error=schema_error)),
         ) as mock:
             await generate_query_python_code(
-                query_to_generate=QueryToGenerate(
+                query_to_generate=QueryToGenerateInfo(
                     query="select 1",
                     function_name=StringInSnakeLowerCase(function_name),
                     params={},
@@ -141,7 +139,9 @@ async def test_handle_response_schema_getter_error(
             )
 
         assert mock.called
-        assert error.value.error == schema_error
+    assert (
+        error.value.error == "Postgres type: `kek` in column: `test` not supported yet"
+    )
 
 
 async def test_generate_code_with_params_when_some_params_not_optional(
@@ -151,7 +151,7 @@ async def test_generate_code_with_params_when_some_params_not_optional(
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query="select $1::integer as v1, $2::integer as v2",
             function_name=StringInSnakeLowerCase(function_name),
             params={

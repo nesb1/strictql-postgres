@@ -7,7 +7,7 @@ import asyncpg.prepared_stmt
 from strictql_postgres.common_types import ColumnType
 from strictql_postgres.python_types import (
     ALL_TYPES,
-    SimpleType,
+    RecursiveListType,
 )
 from strictql_postgres.supported_postgres_types import (
     PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES,
@@ -41,7 +41,7 @@ class PgResponseSchemaTypeNotSupported:
     column_name: str
 
     def __str__(self) -> str:
-        return f"postgres_type: {self.postgres_type}, column_name: {self.column_name}"
+        return f"postgres_type: {self.postgres_type} not supported yet, column_name: {self.column_name}"
 
 
 @dataclasses.dataclass
@@ -91,22 +91,41 @@ def get_pg_response_schema_from_prepared_statement(
 
     pg_response_schema: dict[str, ALL_TYPES] = {}
     for attribute in prepared_stmt.get_attributes():
+        is_array = False
+        attribute_type_name = attribute.type.name
+        if attribute.type.name.endswith("[]"):
+            is_array = True
+            attribute_type_name = attribute.type.name.removesuffix("[]")
+
         python_simple_type = PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES.get(
-            attribute.type.name
+            attribute_type_name
         )
 
         if python_simple_type is not None:
-            pg_response_schema[attribute.name] = SimpleType(
-                type_=python_simple_type, is_optional=True
+            if not is_array:
+                pg_response_schema[attribute.name] = python_simple_type(
+                    is_optional=True
+                )
+
+                continue
+            pg_response_schema[attribute.name] = RecursiveListType(
+                generic_type=python_simple_type(is_optional=True),
+                is_optional=True,
             )
+
             continue
 
         type_with_import = PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT.get(
-            attribute.type.name
+            attribute_type_name
         )
 
         if type_with_import is not None:
-            pg_response_schema[attribute.name] = type_with_import(is_optional=True)
+            if not is_array:
+                pg_response_schema[attribute.name] = type_with_import(is_optional=True)
+                continue
+            pg_response_schema[attribute.name] = RecursiveListType(
+                generic_type=type_with_import(is_optional=True), is_optional=True
+            )
             continue
 
         raise PgResponseSchemaGetterError(

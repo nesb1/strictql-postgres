@@ -30,7 +30,11 @@ from strictql_postgres.meta_file import (
     generate_meta_file,
 )
 from strictql_postgres.python_types import FilesContentByPath
-from strictql_postgres.queries_generator import StrictqlGeneratorError, generate_queries
+from strictql_postgres.queries_generator import (
+    PostgresConnectionError,
+    QueriesGeneratorErrors,
+    generate_queries,
+)
 from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
 
 logger = logging.getLogger(__name__)
@@ -101,12 +105,38 @@ async def _generate_queries() -> GenerateQueriesResult:
     )
     try:
         generated_code = await generate_queries(queries_to_generate)
-    except StrictqlGeneratorError:
-        console.print(
-            "Error occurred while generating queries",
+    except PostgresConnectionError as error:
+        text = Text(
+            f"Error occurred while connecting to database `{error.database}`:\n",
             style=Style(color="red", bold=True),
         )
-        console.print_exception()
+        error_text = Text(
+            error.error,
+            style=Style(
+                color="black",
+                bold=False,
+            ),
+        )
+        console.print(
+            text + error_text,
+        )
+        sys.exit(1)
+    except QueriesGeneratorErrors as error:
+        console.print(
+            f"Error occurred for {len(error.errors)} queries",
+            style=Style(color="red", bold=True),
+        )
+        table = Table("query", "error", show_lines=True, show_edge=True)
+        for query_generate_error in error.errors:
+            table.add_row(
+                Text(
+                    query_generate_error.query_to_generate.query,
+                    style=Style(color="blue", bold=True),
+                ),
+                Text(query_generate_error.error),
+            )
+
+        console.print(table)
         sys.exit(1)
 
     return GenerateQueriesResult(
