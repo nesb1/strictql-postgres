@@ -30,10 +30,10 @@ Thus, `StrictQL` solves the following problems:
 
 ## Project status
 
-The project is actively developing, currently only a part of the types is supported. The supported types can be found [here](https://github.com/nesb1/strictql-postgres/blob/main/strictql_postgres/supported_postgres_types.py)
+The project is actively developing, currently only a part of the types is supported. The supported types can be
+found [here](https://github.com/nesb1/strictql-postgres/blob/main/strictql_postgres/supported_postgres_types.py)
 
 The remaining types will be added over time.
-
 
 ## Usage Example
 
@@ -85,7 +85,7 @@ class Select1Model(BaseModel):  # type: ignore[explicit-any]
 
 
 async def select_1(
-    connection: Connection, timeout: timedelta | None = None
+        connection: Connection, timeout: timedelta | None = None
 ) -> Sequence[Select1Model]:
     query = """
     SELECT 1 AS value
@@ -98,6 +98,41 @@ async def select_1(
     )
 
 ```
+
+## Supported data types
+
+| Postgres type | Python Type          |
+|---------------|----------------------|
+| `int2`        | `int`                |
+| `int4`        | `int`                |
+| `int8`        | `int`                |
+| `float4`      | `float`              |
+| `float8`      | `float`              |
+| `varchar`     | `str`                |
+| `char`        | `str`                |
+| `bpchar`      | `str`                |
+| `text`        | `str`                |
+| `bool`        | `bool`               |
+| `bytea`       | `bytes`              |
+| `decimal`     | `decimal.Decimal`    |
+| `numeric`     | `decimal.Decimal`    |
+| `date`        | `datetime.date`      |
+| `time`        | `datetime.time`      |
+| `timetz`      | `datetime.time`      |
+| `interval`    | `datetime.timedelta` |
+| `timestamp`   | `datetime.datetime`  |
+| `timestamptz` | `datetime.datetime`  |
+
+
+### Arrays
+An array option is also available for all supported data types. 
+
+However, postgres does not provide information about the dimension of the array at the stage of query preparation, since this information is dynamic.
+Therefore, the type in python looks like a large union in order to protect against errors.
+
+For example, postgres type `integer[]` maps to python type: 
+
+```value: list[int | None | list[int | None | list[int | None | object]]] | None```
 
 ## Available Commands
 
@@ -128,7 +163,8 @@ Query fields:
 
 - `query` - SQL query.
 - `database` - Name of the database from `pyproject.toml` that this query will be executed against.
-- `query_type` - Query type, currently there are three ones: `fetch`, `fetch_row`, and `execute` which correspond to methods
+- `query_type` - Query type, currently there are three ones: `fetch`, `fetch_row`, and `execute` which correspond to
+  methods
   from `asyncpg`.
 - `relative_path` - Path to the Python file relative to `code_generate_dir` where the code will be saved. You can
   specify nested directories, `strictql` will create them.
@@ -185,7 +221,8 @@ whether a field in the response or query is `NOT NULL` or not.
 `postgres` views optionality not as a data type, but
 as [constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).
 
-You might object and say that you it can simply get the table name from the query and find out from `postgres` through the
+You might object and say that you it can simply get the table name from the query and find out from `postgres` through
+the
 `pg_attributes` table about the optionality of columns.
 
 Unfortunately, this solution was rejected for the following reasons:
@@ -194,7 +231,8 @@ Unfortunately, this solution was rejected for the following reasons:
 - Queries can be quite complex, for example, having a `left join` that will set a `null` value in a `not null` field
   from the right table if it somehow did not join with the left table.
 
-Me personally dislike this limitation for real, however, it's not possible to solve this problem well. The alternative way is to parse the
+Me personally dislike this limitation for real, however, it's not possible to solve this problem well. The alternative
+way is to parse the
 query and extract various information from `postgres` - the prototype of it was developed but then deleted because
 it turned out to be incredibly complex and unreliable.
 
