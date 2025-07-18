@@ -21,6 +21,8 @@ class SupportedPostgresSimpleTypes(enum.Enum):
     CHAR = "char"
     BPCHAR = "bpchar"
     TEXT = "text"
+    BOOL = "bool"
+    BYTES = "bytes"
 
 
 class SupportedPostgresTypeRequiredImports(enum.Enum):
@@ -44,6 +46,8 @@ PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
     "char": SimpleTypes.STR,
     "bpchar": SimpleTypes.STR,
     "text": SimpleTypes.STR,
+    "bool": SimpleTypes.BOOL,
+    "bytea": SimpleTypes.BYTES,
 }
 
 PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[

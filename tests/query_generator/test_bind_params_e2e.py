@@ -61,14 +61,23 @@ TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, TypeTestData] = {
     SupportedPostgresSimpleTypes.TEXT: TypeTestData(
         bind_param_cast="text", value="kek"
     ),
+    SupportedPostgresSimpleTypes.BOOL: TypeTestData(
+        bind_param_cast="boolean", value=True
+    ),
+    SupportedPostgresSimpleTypes.BYTES: TypeTestData(
+        bind_param_cast="bytea", value=b"kek"
+    ),
 }
 
 
 @pytest.mark.parametrize(
     ("bind_param_cast", "param"),
     [
-        (test_case.bind_param_cast, test_case.value)
-        for postgres_type, test_case in TEST_DATA_FOR_SIMPLE_TYPES.items()
+        (
+            TEST_DATA_FOR_SIMPLE_TYPES[simple_type].bind_param_cast,
+            TEST_DATA_FOR_SIMPLE_TYPES[simple_type].value,
+        )
+        for simple_type in SupportedPostgresSimpleTypes
     ],
 )
 async def test_generate_code_and_execute_for_simple_types_in_bind_param(
