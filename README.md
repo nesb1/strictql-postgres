@@ -140,7 +140,7 @@ For example, postgres type `integer[]` maps to python type:
 ## Available Commands
 
 - `generate` Generates code based on configuration files
-- `check` Verifies that the queries are valid, convenient to use in `CI`
+- `check` Checks that the generated code is up to date, convenient to use in `CI`
 
 ## Configuration
 
