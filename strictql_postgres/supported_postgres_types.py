@@ -1,10 +1,15 @@
 import enum
 
 from strictql_postgres.python_types import (
+    Bool,
+    Bytes,
     DateTimeType,
     DateType,
     DecimalType,
+    Float,
+    Integer,
     SimpleTypes,
+    String,
     TimeDeltaType,
     TimeType,
     TypesWithImport,
@@ -16,13 +21,13 @@ class SupportedPostgresSimpleTypes(enum.Enum):
     INTEGER = "integer"
     BIGINT = "bigint"
     REAL = "real"
-    DOUBLE_PRECISION = "double_precision"
+    DOUBLE_PRECISION = "double precision"
     VARCHAR = "varchar"
     CHAR = "char"
     BPCHAR = "bpchar"
     TEXT = "text"
     BOOL = "bool"
-    BYTES = "bytes"
+    BYTEA = "bytea"
 
 
 class SupportedPostgresTypeRequiredImports(enum.Enum):
@@ -36,18 +41,18 @@ class SupportedPostgresTypeRequiredImports(enum.Enum):
     INTERVAL = "interval"
 
 
-PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES = {
-    "int2": SimpleTypes.INT,
-    "int4": SimpleTypes.INT,
-    "int8": SimpleTypes.INT,
-    "float4": SimpleTypes.FLOAT,
-    "float8": SimpleTypes.FLOAT,
-    "varchar": SimpleTypes.STR,
-    "char": SimpleTypes.STR,
-    "bpchar": SimpleTypes.STR,
-    "text": SimpleTypes.STR,
-    "bool": SimpleTypes.BOOL,
-    "bytea": SimpleTypes.BYTES,
+PYTHON_TYPE_BY_POSTGRES_SIMPLE_TYPES: dict[str, type[SimpleTypes]] = {
+    "int2": Integer,
+    "int4": Integer,
+    "int8": Integer,
+    "float4": Float,
+    "float8": Float,
+    "varchar": String,
+    "char": String,
+    "bpchar": String,
+    "text": String,
+    "bool": Bool,
+    "bytea": Bytes,
 }
 
 PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
@@ -61,4 +66,12 @@ PYTHON_TYPE_BY_POSTGRES_TYPE_WHEN_TYPE_REQUIRE_IMPORT: dict[
     "interval": TimeDeltaType,
     "timestamp": DateTimeType,
     "timestamptz": DateTimeType,
+}
+
+
+ALL_SUPPORTED_POSTGRES_TYPES: set[
+    SupportedPostgresSimpleTypes | SupportedPostgresTypeRequiredImports
+] = {simple_type for simple_type in SupportedPostgresSimpleTypes} | {
+    type_required_import
+    for type_required_import in SupportedPostgresTypeRequiredImports
 }

@@ -1,5 +1,3 @@
-import dataclasses
-
 import pytest
 
 import asyncpg
@@ -7,83 +5,36 @@ from strictql_postgres.pg_bind_params_type_getter import (
     get_bind_params_python_types,
 )
 from strictql_postgres.python_types import (
-    DateTimeType,
-    DateType,
-    DecimalType,
-    SimpleType,
+    RecursiveListSupportedTypes,
+    RecursiveListType,
     SimpleTypes,
-    TimeDeltaType,
-    TimeType,
     TypesWithImport,
 )
 from strictql_postgres.supported_postgres_types import (
+    ALL_SUPPORTED_POSTGRES_TYPES,
     SupportedPostgresSimpleTypes,
     SupportedPostgresTypeRequiredImports,
 )
-
-
-@dataclasses.dataclass
-class SimpleTypeTestData:
-    bind_param_cast: str
-    expected_python_type: SimpleTypes
-
-
-TEST_DATA_FOR_SIMPLE_TYPES: dict[SupportedPostgresSimpleTypes, SimpleTypeTestData] = {
-    SupportedPostgresSimpleTypes.SMALLINT: SimpleTypeTestData(
-        bind_param_cast="smallint",
-        expected_python_type=SimpleTypes.INT,
-    ),
-    SupportedPostgresSimpleTypes.INTEGER: SimpleTypeTestData(
-        bind_param_cast="integer",
-        expected_python_type=SimpleTypes.INT,
-    ),
-    SupportedPostgresSimpleTypes.BIGINT: SimpleTypeTestData(
-        bind_param_cast="bigint",
-        expected_python_type=SimpleTypes.INT,
-    ),
-    SupportedPostgresSimpleTypes.REAL: SimpleTypeTestData(
-        bind_param_cast="real",
-        expected_python_type=SimpleTypes.FLOAT,
-    ),
-    SupportedPostgresSimpleTypes.DOUBLE_PRECISION: SimpleTypeTestData(
-        bind_param_cast="double precision",
-        expected_python_type=SimpleTypes.FLOAT,
-    ),
-    SupportedPostgresSimpleTypes.VARCHAR: SimpleTypeTestData(
-        bind_param_cast="varchar", expected_python_type=SimpleTypes.STR
-    ),
-    SupportedPostgresSimpleTypes.CHAR: SimpleTypeTestData(
-        bind_param_cast="char", expected_python_type=SimpleTypes.STR
-    ),
-    SupportedPostgresSimpleTypes.BPCHAR: SimpleTypeTestData(
-        bind_param_cast="bpchar", expected_python_type=SimpleTypes.STR
-    ),
-    SupportedPostgresSimpleTypes.TEXT: SimpleTypeTestData(
-        bind_param_cast="text", expected_python_type=SimpleTypes.STR
-    ),
-    SupportedPostgresSimpleTypes.BOOL: SimpleTypeTestData(
-        bind_param_cast="boolean", expected_python_type=SimpleTypes.BOOL
-    ),
-    SupportedPostgresSimpleTypes.BYTES: SimpleTypeTestData(
-        bind_param_cast="bytea", expected_python_type=SimpleTypes.BYTES
-    ),
-}
+from tests.pg_types_test_data import (
+    TEST_DATA_FOR_ALL_TYPES,
+    TEST_DATA_FOR_SIMPLE_TYPES,
+    TEST_DATA_FOR_TYPES_WITH_IMPORT,
+    SimpleTypeTestData,
+)
 
 
 @pytest.mark.parametrize(
-    ("query_literal", "expected_python_type"),
+    ("query_literal", "expected_simple_type"),
     [
-        (
-            TEST_DATA_FOR_SIMPLE_TYPES[supported_type].bind_param_cast,
-            TEST_DATA_FOR_SIMPLE_TYPES[supported_type].expected_python_type,
-        )
+        (test_data.test_data.cast_str, test_data.simple_type)
         for supported_type in SupportedPostgresSimpleTypes
+        for test_data in TEST_DATA_FOR_SIMPLE_TYPES[supported_type]
     ],
 )
 async def test_get_bind_params_types_for_simple_types(
     asyncpg_connection_pool_to_test_db: asyncpg.Pool,
     query_literal: str,
-    expected_python_type: SimpleTypes,
+    expected_simple_type: type[SimpleTypes],
 ) -> None:
     async with asyncpg_connection_pool_to_test_db.acquire() as connection:
         prepared_statement = await connection.prepare(
@@ -93,63 +44,18 @@ async def test_get_bind_params_types_for_simple_types(
             prepared_statement=prepared_statement,
         )
 
-        assert actual_bind_params == [
-            SimpleType(type_=expected_python_type, is_optional=True)
-        ]
-
-
-@dataclasses.dataclass
-class TypeWithImportTestData:
-    bind_param_cast: str
-    expected_python_type: type[TypesWithImport]
-
-
-TEST_DATA_FOR_TYPES_WITH_IMPORT: dict[
-    SupportedPostgresTypeRequiredImports, TypeWithImportTestData
-] = {
-    SupportedPostgresTypeRequiredImports.NUMERIC: TypeWithImportTestData(
-        bind_param_cast="numeric",
-        expected_python_type=DecimalType,
-    ),
-    SupportedPostgresTypeRequiredImports.DECIMAL: TypeWithImportTestData(
-        bind_param_cast="decimal",
-        expected_python_type=DecimalType,
-    ),
-    SupportedPostgresTypeRequiredImports.TIMESTAMP: TypeWithImportTestData(
-        bind_param_cast="timestamp",
-        expected_python_type=DateTimeType,
-    ),
-    SupportedPostgresTypeRequiredImports.TIMESTAMPTZ: TypeWithImportTestData(
-        bind_param_cast="timestamptz",
-        expected_python_type=DateTimeType,
-    ),
-    SupportedPostgresTypeRequiredImports.TIME: TypeWithImportTestData(
-        bind_param_cast="time",
-        expected_python_type=TimeType,
-    ),
-    SupportedPostgresTypeRequiredImports.TIMETZ: TypeWithImportTestData(
-        bind_param_cast="timetz",
-        expected_python_type=TimeType,
-    ),
-    SupportedPostgresTypeRequiredImports.DATE: TypeWithImportTestData(
-        bind_param_cast="date",
-        expected_python_type=DateType,
-    ),
-    SupportedPostgresTypeRequiredImports.INTERVAL: TypeWithImportTestData(
-        bind_param_cast="interval",
-        expected_python_type=TimeDeltaType,
-    ),
-}
+        assert actual_bind_params == [expected_simple_type(is_optional=True)]
 
 
 @pytest.mark.parametrize(
     ("bind_param_cast", "param"),
     [
         (
-            TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].bind_param_cast,
-            TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type].expected_python_type,
+            test_data.test_data.cast_str,
+            test_data.type_with_import,
         )
         for data_type in SupportedPostgresTypeRequiredImports
+        for test_data in TEST_DATA_FOR_TYPES_WITH_IMPORT[data_type]
     ],
 )
 async def test_bind_params_for_types_with_import(
@@ -167,3 +73,40 @@ async def test_bind_params_for_types_with_import(
         )
 
         assert actual_bind_params == [param(is_optional=True)]
+
+
+@pytest.mark.parametrize("array_dimension", [1, 3, 10])
+@pytest.mark.parametrize(
+    ("cast_", "expected_python_type"),
+    [
+        (
+            test_data.test_data.cast_str,
+            (
+                test_data.simple_type(is_optional=True)
+                if isinstance(test_data, SimpleTypeTestData)
+                else test_data.type_with_import(is_optional=True)
+            ),
+        )
+        for type_ in ALL_SUPPORTED_POSTGRES_TYPES
+        for test_data in TEST_DATA_FOR_ALL_TYPES[type_]
+    ],
+)
+async def test_array(
+    asyncpg_connection_pool_to_test_db: asyncpg.Pool,
+    cast_: str,
+    array_dimension: int,
+    expected_python_type: RecursiveListSupportedTypes,
+) -> None:
+    async with asyncpg_connection_pool_to_test_db.acquire() as connection:
+        array_cast_str = "".join(["[]" for _ in range(array_dimension)])
+        prepared_stmt = await connection.prepare(
+            f"select $1::{cast_}{array_cast_str} as value"
+        )
+
+        actual_bind_params = await get_bind_params_python_types(
+            prepared_statement=prepared_stmt
+        )
+
+        assert actual_bind_params == [
+            RecursiveListType(generic_type=expected_python_type, is_optional=True)
+        ]

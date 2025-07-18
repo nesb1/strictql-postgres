@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import enum
+import dataclasses
 import pathlib
+import typing
 from dataclasses import dataclass
 from typing import Literal, Mapping, Union
 
@@ -12,28 +13,40 @@ from mako.template import (  # type: ignore[import-untyped] # mako has not typin
 from strictql_postgres.templates import TEMPLATES_DIR
 from strictql_postgres.type_str_creator import create_type_str
 
-
-class SimpleTypes(enum.Enum):
-    BOOL = "bool"
-    INT = "int"
-    FLOAT = "float"
-    STR = "str"
-    BYTES = "bytes"
-
-
-ALL_TYPES = Union["ListType", "SimpleType", "InnerModelType", "TypesWithImport"]
+ALL_TYPES = Union[
+    "SimpleTypes",
+    "InnerModelType",
+    "TypesWithImport",
+    "RecursiveListType",
+]
 
 
-@dataclass
-class SimpleType:
-    type_: SimpleTypes
+@dataclasses.dataclass()
+class Bool:
     is_optional: bool
 
 
-@dataclass
-class ListType:
-    generic_type: ALL_TYPES
+@dataclasses.dataclass()
+class String:
     is_optional: bool
+
+
+@dataclasses.dataclass()
+class Integer:
+    is_optional: bool
+
+
+@dataclasses.dataclass()
+class Float:
+    is_optional: bool
+
+
+@dataclasses.dataclass()
+class Bytes:
+    is_optional: bool
+
+
+SimpleTypes = Bool | String | Integer | Float | Bool | Bytes
 
 
 @dataclass
@@ -86,13 +99,7 @@ class InnerModelType:
 TypesWithImport = DecimalType | DateTimeType | DateType | TimeType | TimeDeltaType
 
 
-@dataclass
-class ClassType:
-    fields: dict[str, ALL_TYPES]
-
-
-INT_TYPE = SimpleType(type_=SimpleTypes.INT, is_optional=True)
-LIST_OF_INTS = ListType(INT_TYPE, is_optional=True)
+RecursiveListSupportedTypes = Union[SimpleTypes, TypesWithImport]
 
 
 @dataclass(frozen=True)
@@ -124,10 +131,23 @@ class FormattedType:
     type_: str
 
 
-def format_simple_type(type_: SimpleType) -> str:
+def format_simple_type(type_: SimpleTypes) -> str:
+    match type_:
+        case String():
+            type_name = "str"
+        case Integer():
+            type_name = "int"
+        case Float():
+            type_name = "float"
+        case Bytes():
+            type_name = "bytes"
+        case Bool():
+            type_name = "bool"
+        case _:
+            typing.assert_never(type_)
     if not type_.is_optional:
-        return type_.type_.value
-    return f"{type_.type_.value} | None"
+        return type_name
+    return f"{type_name} | None"
 
 
 def format_type_with_import(type_: TypesWithImport) -> FormattedTypeWithImport:
@@ -149,10 +169,8 @@ def generate_code_for_model_as_pydantic(
             fields[name] = create_type_str(
                 type_=type_.name, is_optional=type_.is_optional
             )
-        elif isinstance(type_, SimpleType):
-            fields[name] = create_type_str(
-                type_=type_.type_.value, is_optional=type_.is_optional
-            )
+        elif isinstance(type_, SimpleTypes):
+            fields[name] = format_simple_type(type_=type_)
         elif isinstance(type_, InnerModelType):
             generated_code = generate_code_for_model_as_pydantic(
                 model_type=type_.model_type
@@ -162,6 +180,13 @@ def generate_code_for_model_as_pydantic(
             fields[name] = create_type_str(
                 type_=type_.model_type.name, is_optional=type_.is_optional
             )
+        elif isinstance(type_, RecursiveListType):
+            recursive_list_code = generate_recursive_list_definition(type_)
+            imports.update(recursive_list_code.imports)
+            models.update(recursive_list_code.models_code)
+            fields[name] = recursive_list_code.type_
+        else:
+            raise NotImplementedError(type_)
 
     mako_template = (TEMPLATES_DIR / "pydantic_model.txt").read_text()
     model_code = (
@@ -172,12 +197,14 @@ def generate_code_for_model_as_pydantic(
     models.add(model_code)  # type: ignore [misc]
 
     return GeneratedCodeWithModelDefinitions(
-        imports=imports, models_code=models, main_model_name=model_type.name
+        imports=imports,
+        models_code=models,
+        main_model_name=model_type.name,
     )
 
 
 def format_type(type: ALL_TYPES) -> FormattedType:
-    if isinstance(type, SimpleType):
+    if isinstance(type, SimpleTypes):
         return FormattedType(
             imports=set(),
             models_code=set(),
@@ -196,7 +223,35 @@ def format_type(type: ALL_TYPES) -> FormattedType:
             models_code=generated_code.models_code,
             type_=type.model_type.name,
         )
+    if isinstance(type, RecursiveListType):
+        return generate_recursive_list_definition(t=type)
     raise NotImplementedError(type)
 
 
 FilesContentByPath = Mapping[pathlib.Path, str]
+
+
+@dataclasses.dataclass
+class RecursiveListType:
+    generic_type: RecursiveListSupportedTypes
+    is_optional: bool
+
+
+def generate_recursive_list_definition(t: RecursiveListType) -> FormattedType:
+    formatted_inner_type = format_type(t.generic_type)
+
+    type_name = f"list[{formatted_inner_type.type_} | list[{formatted_inner_type.type_} | list[{formatted_inner_type.type_} | object]]]"
+
+    if t.is_optional:
+        type_name += " | None"
+    return FormattedType(
+        imports={
+            *formatted_inner_type.imports,
+            "from typing import TypeAliasType",
+            "from typing import Union",
+        },
+        models_code={
+            *formatted_inner_type.models_code,
+        },
+        type_=type_name,
+    )
