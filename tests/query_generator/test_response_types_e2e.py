@@ -9,7 +9,7 @@ import pytest
 import asyncpg
 from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.query_generator import (
-    QueryToGenerate,
+    QueryToGenerateInfo,
     generate_query_python_code,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -54,7 +54,7 @@ async def test_generate_code_and_execute_for_simple_types_in_response_model(
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             params={},
             query_type="fetch",
@@ -103,7 +103,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={},
@@ -189,7 +189,7 @@ async def test_generate_code_and_execute_for_array_types_in_response_model(
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={},

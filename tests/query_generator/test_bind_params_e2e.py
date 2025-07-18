@@ -10,7 +10,7 @@ import asyncpg
 from strictql_postgres.code_quality import CodeFixer
 from strictql_postgres.queries_to_generate import Parameter
 from strictql_postgres.query_generator import (
-    QueryToGenerate,
+    QueryToGenerateInfo,
     generate_query_python_code,
 )
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
@@ -46,7 +46,7 @@ async def test_generate_code_and_execute_for_simple_types_in_bind_param(
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             params={"param": Parameter(is_optional=True)},
             query_type="fetch",
@@ -100,7 +100,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
@@ -149,7 +149,7 @@ async def test_generate_code_and_execute_for_types_with_import_in_response_model
     function_name = "fetch_all_test"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},
@@ -212,7 +212,7 @@ async def test_generate_code_and_execute_for_array_types(
     function_name = "test_func"
 
     code = await generate_query_python_code(
-        query_to_generate=QueryToGenerate(
+        query_to_generate=QueryToGenerateInfo(
             query=query,
             function_name=StringInSnakeLowerCase(function_name),
             params={"param": Parameter(is_optional=True)},

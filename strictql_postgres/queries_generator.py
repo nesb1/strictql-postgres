@@ -1,22 +1,41 @@
 import asyncio
 import dataclasses
+import pathlib
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from pydantic import SecretStr
 
 import asyncpg
+from strictql_postgres.format_exception import format_exception
 from strictql_postgres.python_types import FilesContentByPath
-from strictql_postgres.queries_to_generate import StrictQLQueriesToGenerate
-from strictql_postgres.query_generator import (
+from strictql_postgres.queries_to_generate import (
     QueryToGenerate,
+    StrictQLQueriesToGenerate,
+)
+from strictql_postgres.query_generator import (
+    QueryPythonCodeGeneratorError,
+    QueryToGenerateInfo,
     generate_query_python_code,
 )
 
 
-@dataclasses.dataclass
-class StrictqlGeneratorError(Exception):
+@dataclasses.dataclass(frozen=True)
+class QueryGeneratorError:
+    query_to_generate: QueryToGenerate
+    query_to_generate_path: pathlib.Path
     error: str
+
+
+@dataclasses.dataclass
+class QueriesGeneratorErrors(Exception):
+    errors: list[QueryGeneratorError]
+
+
+@dataclasses.dataclass
+class PostgresConnectionError(Exception):
+    error: str
+    database: str
 
 
 @asynccontextmanager
@@ -30,8 +49,9 @@ async def _create_pools(
                 connection_url_secret.get_secret_value()
             ).__aenter__()
         except Exception as postgres_error:
-            raise StrictqlGeneratorError(
-                f"Cannot generate query code because error occurred during connection to database: {db_name}"
+            raise PostgresConnectionError(
+                error=format_exception(postgres_error),
+                database=db_name,
             ) from postgres_error
 
     try:
@@ -57,7 +77,7 @@ async def generate_queries(
         ) in queries_to_generate.queries_to_generate.items():
             task = asyncio.create_task(
                 generate_query_python_code(
-                    query_to_generate=QueryToGenerate(
+                    query_to_generate=QueryToGenerateInfo(
                         query=query_to_generate.query,
                         function_name=query_to_generate.function_name,
                         params=query_to_generate.parameters,
@@ -70,11 +90,33 @@ async def generate_queries(
 
             tasks.append(task)
 
-        results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        errors = []
+        success = []
+        for (file_path, query_to_generate), result in zip(
+            queries_to_generate.queries_to_generate.items(), results
+        ):
+            if isinstance(result, QueryPythonCodeGeneratorError):
+                errors.append(
+                    QueryGeneratorError(
+                        query_to_generate=query_to_generate,
+                        query_to_generate_path=file_path.resolve(),
+                        error=result.error,
+                    )
+                )
+                continue
+            if isinstance(result, BaseException):
+                raise result
+            success.append(result)
+
+        if len(errors) > 0:
+            raise QueriesGeneratorErrors(
+                errors=errors,
+            )
 
         files = {}
         for code, file_path in zip(
-            results, queries_to_generate.queries_to_generate.keys()
+            success, queries_to_generate.queries_to_generate.keys()
         ):
             files[file_path] = code
 

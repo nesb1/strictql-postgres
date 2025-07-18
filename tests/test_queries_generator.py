@@ -1,9 +1,14 @@
 import pathlib
-from tempfile import TemporaryDirectory
+from unittest import mock
+from unittest.mock import AsyncMock
 
+import pytest
 from pydantic import SecretStr
 
 from strictql_postgres.queries_generator import (
+    PostgresConnectionError,
+    QueriesGeneratorErrors,
+    QueryGeneratorError,
     generate_queries,
 )
 from strictql_postgres.queries_to_generate import (
@@ -11,207 +16,126 @@ from strictql_postgres.queries_to_generate import (
     QueryToGenerate,
     StrictQLQueriesToGenerate,
 )
+from strictql_postgres.query_generator import QueryPythonCodeGeneratorError
 from strictql_postgres.string_in_snake_case import StringInSnakeLowerCase
 
 
 async def test_strictql_generator_works() -> None:
-    with TemporaryDirectory() as tmpdir:
-        generated_code_dir_path = pathlib.Path(tmpdir) / "generated_code_dir"
+    db_connection_url = SecretStr("postgresql://postgres:password@localhost/postgres")
+
+    await generate_queries(
+        queries_to_generate=StrictQLQueriesToGenerate(
+            queries_to_generate={
+                pathlib.Path("file_1"): QueryToGenerate(
+                    query="select 1 as value",
+                    parameters={},
+                    database_name="db",
+                    database_connection_url=db_connection_url,
+                    query_type="fetch",
+                    function_name=StringInSnakeLowerCase("query"),
+                ),
+                pathlib.Path("file_2"): QueryToGenerate(
+                    query="select 2 as value",
+                    parameters={},
+                    database_name="db",
+                    database_connection_url=db_connection_url,
+                    query_type="fetch",
+                    function_name=StringInSnakeLowerCase("query"),
+                ),
+            },
+            databases={"db": DataBaseSettings(connection_url=db_connection_url)},
+            generated_code_path=pathlib.Path("generated_code"),
+        )
+    )
+
+
+async def test_strictql_generator_handle_query_generator_error() -> None:
+    with mock.patch(
+        "strictql_postgres.queries_generator.generate_query_python_code",
+        new=AsyncMock(),
+    ) as mocked_generate_query_python_code:
+        query_generator_error1 = "kek"
+        query_generator_error2 = "eke"
+        mocked_generate_query_python_code.side_effect = [  # type: ignore[misc]
+            "a=1",
+            QueryPythonCodeGeneratorError(query_generator_error1),
+            QueryPythonCodeGeneratorError(query_generator_error2),
+        ]
         db_connection_url = SecretStr(
             "postgresql://postgres:password@localhost/postgres"
         )
-        file_1 = generated_code_dir_path / pathlib.Path("query1.py")
-        file_2 = generated_code_dir_path / pathlib.Path("query2.py")
-        files = await generate_queries(
+
+        query_to_generate = QueryToGenerate(
+            query="select 1 as value",
+            function_name=StringInSnakeLowerCase("select_1"),
+            parameters={},
+            database_name="db",
+            database_connection_url=db_connection_url,
+            query_type="fetch",
+        )
+        with pytest.raises(QueriesGeneratorErrors) as error:
+            await generate_queries(
+                queries_to_generate=StrictQLQueriesToGenerate(
+                    queries_to_generate={
+                        pathlib.Path("query1.py"): query_to_generate,
+                        pathlib.Path("query2.py"): query_to_generate,
+                        pathlib.Path("query3.py"): query_to_generate,
+                    },
+                    databases={
+                        "db": DataBaseSettings(connection_url=db_connection_url)
+                    },
+                    generated_code_path=pathlib.Path(),
+                )
+            )
+        assert error.value.errors == [
+            QueryGeneratorError(
+                query_to_generate=query_to_generate,
+                error=query_generator_error1,
+                query_to_generate_path=pathlib.Path("query2.py").resolve(),
+            ),
+            QueryGeneratorError(
+                query_to_generate=query_to_generate,
+                error=query_generator_error2,
+                query_to_generate_path=pathlib.Path("query3.py").resolve(),
+            ),
+        ]
+
+
+async def test_strictql_generator_handle_invalid_postgres_url() -> None:
+    with pytest.raises(PostgresConnectionError) as error:
+        await generate_queries(
             queries_to_generate=StrictQLQueriesToGenerate(
-                queries_to_generate={
-                    file_1: QueryToGenerate(
-                        query="select 1 as value",
-                        parameters={},
-                        database_name="db",
-                        database_connection_url=db_connection_url,
-                        query_type="fetch",
-                        function_name=StringInSnakeLowerCase("query"),
-                    ),
-                    file_2: QueryToGenerate(
-                        query="select 2 as value",
-                        parameters={},
-                        database_name="db",
-                        database_connection_url=db_connection_url,
-                        query_type="fetch",
-                        function_name=StringInSnakeLowerCase("query"),
-                    ),
+                queries_to_generate={},
+                databases={
+                    "db": DataBaseSettings(
+                        connection_url=SecretStr("invalid_postgres_url")
+                    )
                 },
-                databases={"db": DataBaseSettings(connection_url=db_connection_url)},
-                generated_code_path=generated_code_dir_path,
+                generated_code_path=pathlib.Path("query1.py"),
             )
         )
+    assert (
+        error.value.error
+        == "<class 'asyncpg.exceptions._base.ClientConfigurationError'>: invalid DSN: scheme is expected to be either \"postgresql\" or \"postgres\", got ''"
+    )
 
-        assert file_1 in files
-        assert file_1 in files
 
-
-#
-# async def test_strictql_generator_handle_query_generator_error() -> None:
-#     data_base = DataBaseSettings(
-#         name="test",
-#         connection_url=SecretStr("postgresql://postgres:password@localhost/postgres"),
-#     )
-#     with TemporaryDirectory() as tmpdir:
-#         generated_code_dir_path = pathlib.Path(tmpdir)
-#         existing_file = "file.py"
-#         (generated_code_dir_path / existing_file).touch(exist_ok=False)
-#
-#         with mock.patch(
-#             "strictql_postgres.queries_generator.generate_query_python_code",
-#             new=AsyncMock(),
-#         ) as mocked_generate_query_python_code:
-#             mocked_generate_query_python_code.side_effect = [  # type: ignore[misc]
-#                 "a=1",
-#                 QueryPythonCodeGeneratorError("123"),
-#                 Exception("exception"),
-#             ]
-#             with pytest.raises(StrictqlGeneratorError):
-#                 await generate_queries(
-#                     settings=StrictqlSettings(
-#                         queries_to_generate={
-#                             pathlib.Path("query1.py"): QueryToGenerate(
-#                                 query="select 1 as value",
-#                                 name="query1",
-#                                 parameter_names=[],
-#                                 database=data_base,
-#                                 return_type="list",
-#                                 function_name="select_1",
-#                             ),
-#                             pathlib.Path("query2.py"): QueryToGenerate(
-#                                 query="select 1 as value",
-#                                 name="query1",
-#                                 parameter_names=[],
-#                                 database=data_base,
-#                                 return_type="list",
-#                                 function_name="select_1",
-#                             ),
-#                         },
-#                         databases={data_base.name: data_base},
-#                         generated_code_path=generated_code_dir_path,
-#                     )
-#                 )
-#
-#         file_names = [file.name for file in generated_code_dir_path.iterdir()]
-#
-#         assert file_names == [existing_file]
-#
-#
-# async def test_strictql_generator_handle_query_generator_error_immediately() -> None:
-#     data_base = DataBaseSettings(
-#         name="test",
-#         connection_url=SecretStr("postgresql://postgres:password@localhost/postgres"),
-#     )
-#     with TemporaryDirectory() as tmpdir:
-#         generated_code_dir_path = pathlib.Path(tmpdir)
-#         existing_file = "file.py"
-#         (generated_code_dir_path / existing_file).touch(exist_ok=False)
-#
-#         called = False
-#
-#         async def long_running_task(*args: object, **kwargs: object) -> str:
-#             nonlocal called
-#
-#             if not called:
-#                 called = True
-#                 raise QueryPythonCodeGeneratorError("123")
-#
-#             await asyncio.sleep(1)
-#             return "a=1"
-#
-#         with mock.patch(
-#             "strictql_postgres.queries_generator.generate_query_python_code",
-#             new=AsyncMock(),
-#         ) as mocked_generate_query_python_code:
-#             mocked_generate_query_python_code.side_effect = long_running_task
-#             with pytest.raises(StrictqlGeneratorError):
-#                 async with asyncio.timeout(0.5):
-#                     await generate_queries(
-#                         settings=StrictqlSettings(
-#                             queries_to_generate={
-#                                 pathlib.Path("query1.py"): QueryToGenerate(
-#                                     query="select 1 as value",
-#                                     name="query1",
-#                                     parameter_names=[],
-#                                     database=data_base,
-#                                     return_type="list",
-#                                     function_name="select_1",
-#                                 ),
-#                                 pathlib.Path("query2.py"): QueryToGenerate(
-#                                     query="select 1 as value",
-#                                     name="query1",
-#                                     parameter_names=[],
-#                                     database=data_base,
-#                                     return_type="list",
-#                                     function_name="select_1",
-#                                 ),
-#                             },
-#                             databases={data_base.name: data_base},
-#                             generated_code_path=generated_code_dir_path,
-#                         )
-#                     )
-#
-#         file_names = [file.name for file in generated_code_dir_path.iterdir()]
-#
-#         assert file_names == [existing_file]
-#
-#
-# async def test_strictql_generator_handle_invalid_postgres_url() -> None:
-#     data_base = DataBaseSettings(
-#         name="test",
-#         connection_url=SecretStr("invalid_postgres_url"),
-#     )
-#     with TemporaryDirectory() as tmpdir:
-#         generated_code_dir_path = pathlib.Path(tmpdir)
-#
-#         with pytest.raises(StrictqlGeneratorError):
-#             await generate_queries(
-#                 settings=StrictqlSettings(
-#                     queries_to_generate={
-#                         pathlib.Path("query1.py"): QueryToGenerate(
-#                             query="select 1 as value",
-#                             name="query1",
-#                             parameter_names=[],
-#                             database=data_base,
-#                             return_type="list",
-#                             function_name="select_1",
-#                         ),
-#                     },
-#                     databases={data_base.name: data_base},
-#                     generated_code_path=generated_code_dir_path,
-#                 )
-#             )
-#
-#
-# async def test_strictql_generator_handle_invalid_postgres_login_password() -> None:
-#     data_base = DataBaseSettings(
-#         name="test",
-#         connection_url=SecretStr(
-#             "postgresql://postgres:invalid_password@localhost/postgres"
-#         ),
-#     )
-#     with TemporaryDirectory() as tmpdir:
-#         generated_code_dir_path = pathlib.Path(tmpdir)
-#
-#         with pytest.raises(StrictqlGeneratorError):
-#             await generate_queries(
-#                 settings=StrictqlSettings(
-#                     queries_to_generate={
-#                         pathlib.Path("query1.py"): QueryToGenerate(
-#                             query="select 1 as value",
-#                             name="query1",
-#                             parameter_names=[],
-#                             database=data_base,
-#                             return_type="list",
-#                             function_name="select_1",
-#                         ),
-#                     },
-#                     databases={data_base.name: data_base},
-#                     generated_code_path=generated_code_dir_path,
-#                 )
-#             )
+async def test_strictql_generator_handle_invalid_postgres_login_password() -> None:
+    with pytest.raises(PostgresConnectionError) as error:
+        await generate_queries(
+            queries_to_generate=StrictQLQueriesToGenerate(
+                queries_to_generate={},
+                databases={
+                    "db": DataBaseSettings(
+                        connection_url=SecretStr(
+                            "postgresql://postgres:invalid_password@localhost/postgres"
+                        )
+                    )
+                },
+                generated_code_path=pathlib.Path("query1.py"),
+            )
+        )
+    assert (
+        error.value.error
+        == "<class 'asyncpg.exceptions.InvalidPasswordError'>: password authentication failed for user \"postgres\""
+    )

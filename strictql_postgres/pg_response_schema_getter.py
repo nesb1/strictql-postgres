@@ -41,7 +41,7 @@ class PgResponseSchemaTypeNotSupported:
     column_name: str
 
     def __str__(self) -> str:
-        return f"postgres_type: {self.postgres_type}, column_name: {self.column_name}"
+        return f"postgres_type: {self.postgres_type} not supported yet, column_name: {self.column_name}"
 
 
 @dataclasses.dataclass
