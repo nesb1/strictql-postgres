@@ -4,12 +4,16 @@ import os
 import pathlib
 import sys
 
+import questionary
 from cyclopts import App
 from rich.console import Console
 from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
+from strictql_postgres.config_generator import (
+    generate_strictql_section_to_pyproject_toml,
+)
 from strictql_postgres.config_manager import (
     GetStrictQLQueriesToGenerateError,
     ParsedPyprojectTomlWithStrictQLSection,
@@ -49,16 +53,18 @@ class GenerateQueriesResult:
     generated_code: FilesContentByPath
 
 
-async def _generate_queries() -> GenerateQueriesResult:
-    pyproject_toml_path = pathlib.Path("pyproject.toml").resolve()
+RESOLVED_PYPROJECT_TOML_PATH = pathlib.Path("pyproject.toml").resolve()
 
+
+async def _generate_queries() -> GenerateQueriesResult:
     try:
         parsed_pyproject_file_with_strictql_settings = parse_toml_file_as_model(
-            path=pyproject_toml_path, model_type=ParsedPyprojectTomlWithStrictQLSection
+            path=RESOLVED_PYPROJECT_TOML_PATH,
+            model_type=ParsedPyprojectTomlWithStrictQLSection,
         )
     except ParseTomlFileAsModelError as error:
         console.print(
-            f"Error occurred while parsing the {pyproject_toml_path} file. Error: {error.error}",
+            f"Error occurred while parsing the {RESOLVED_PYPROJECT_TOML_PATH} file. Error: {error.error}",
             style=Style(color="red", bold=True),
         )
         console.print_exception()
@@ -271,6 +277,42 @@ async def check() -> None:
     console.print(
         "Check completed successfully.", style=Style(color="green", bold=True)
     )
+
+
+@app.command()  # type: ignore[misc] # Expression contains "Any", todo fix it on cyclopts
+def init() -> None:
+    """
+    Init strictql config
+    """
+    if RESOLVED_PYPROJECT_TOML_PATH.exists():
+        try:
+            parsed_config = parse_toml_file_as_model(
+                path=RESOLVED_PYPROJECT_TOML_PATH,
+                model_type=ParsedPyprojectTomlWithStrictQLSection,
+            )
+        except Exception:
+            pass
+        else:
+            console.print(
+                f"StrictQL config already exists: {parsed_config.model_dump()}"  # type: ignore[misc] # model_dump contains Any
+            )
+            return
+
+    code_generation_dir_path = questionary.path(  # type: ignore[misc] # signature contains Any
+        "Path for the directory with the generated queries"
+    ).ask()
+
+    RESOLVED_PYPROJECT_TOML_PATH.touch(exist_ok=True)
+
+    text = generate_strictql_section_to_pyproject_toml(
+        databases={},
+        code_generation_dir_path=code_generation_dir_path,  # type: ignore[misc]
+    )
+    current_content = RESOLVED_PYPROJECT_TOML_PATH.read_text()
+    current_content += "\n" + text
+    RESOLVED_PYPROJECT_TOML_PATH.write_text(current_content)
+
+    console.print("StrictQL config generated", style=Style(color="green", bold=True))
 
 
 if __name__ == "__main__":

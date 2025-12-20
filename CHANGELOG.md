@@ -6,6 +6,10 @@
 
 - Added warning when no queries to generate specified
 
+### Added
+
+- Added `init` command
+
 ## v0.0.4
 
 ### Added
