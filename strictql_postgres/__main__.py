@@ -84,6 +84,19 @@ async def _generate_queries() -> GenerateQueriesResult:
             sys.exit(1)
 
         parsed_query_files[query_file_path] = parsed_query_file_content.queries
+
+    if len(parsed_query_files) == 0 and not any(
+        (
+            parsed_queries
+            for parsed_queries in parsed_query_files.values()
+            if len(parsed_queries) > 0
+        )
+    ):
+        console.print(
+            "There are no specified queries to generate", style=Style(color="yellow")
+        )
+        sys.exit(1)
+
     try:
         queries_to_generate = get_strictql_queries_to_generate(
             parsed_queries_to_generate_by_query_file_path=parsed_query_files,

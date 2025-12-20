@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixed
+
+- Added warning when no queries to generate specified
+
 ## v0.0.4
 
 ### Added
