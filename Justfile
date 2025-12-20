@@ -19,4 +19,4 @@ fix:
 
 install:
     uv venv
-    uv pip install -r pyproject.toml --group test --group dev
+    uv pip install -r pyproject.toml --group test --group lint
